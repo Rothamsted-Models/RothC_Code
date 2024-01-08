@@ -124,7 +124,7 @@ C READ IN INPUT DATA: START
 C
 C read in RothC input data file: data will be passed from other programs at some point  
       open(11, file='RothC_input.dat', status='unknown')    
-
+!      open(11, file='RothC_input_Morocco.dat', status='unknown') 
 	read(11,*)
 	read(11,*)      
 	read(11,*) 
