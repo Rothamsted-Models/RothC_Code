@@ -45,7 +45,7 @@ C
       
       integer timeFact 
        
-      integer i, j, k    
+      integer i, j, k, k_month
       
       integer t_PC(MAXsteps)
       
@@ -136,7 +136,11 @@ C read in RothC input data file: data will be passed from other programs at some
      &            t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i)
       enddo
       
-      close(11)    
+      close(11)   
+      
+      
+      open(71, file='year_results.dat', status ='unknown')     
+      open(91, file='month_results.dat', status ='unknown')
 C
 C READ IN INPUT DATA: END
 C      
@@ -151,8 +155,15 @@ C
       
       SOC = DPM+RPM+Bio+Hum+IOM
       
+        write(71,7100)
+7100  format(5x, 'Year', 1x,  'Month ', 
+     &  1x, 'DPM_t_C_ha ', 1x,  'RPM_t_C_ha ', 
+     &  1x, 'BIO_t_C_ha ', 1x, 'HUM_t_C_ha ',
+     &  1x, 'IOM_t_C_ha ', 1x, 'SOC_t_C_ha ', 
+     &  1x, 'deltaC')     
+             
       write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC
-101   format(1x, 5x, i8, 6f9.4)  
+101   format(1x, 5x, i9, 6f12.4)  
 
       timeFact = 12 ! monthly
           
@@ -192,23 +203,34 @@ C
 C run RothC to equilibrium: END
 C
          
-      Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0     
+      Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
+      
+
       
       write(71,102) j-1, DPM, RPM, Bio, Hum, iom, SOC, Total_Delta
       
-102   format(1x, 'EQ = ', i8, 6f9.4 , f8.2)             
+102   format(1x, 'EQ = ', 1x, i8, 6f12.4 , f8.2)             
 
        write(91,9100)
-9100  format(4x, 'C_Inp ',2x,  'FYM_Inp ', 1x,  'TEMP ', 1x, 'RM_TMP ',
-     &       3x, 'RAIN ', 2x, 'PEVAP ',3x, 'SWC ', 1x,'RM_Moist ',
-     &       4x, 'PC ', 3x,  'RM_PC ',  6x,  'DPM ', 8x,  'RPM ', 
-     &       8x, 'BIO ', 8x, 'HUM ', 8x, 'IOM ', 8x, 'SOC ')
-     
+9100  format(4x, 'Year ',1x,  'Month ',1x, 'C_Inp_t_C_ha ', 
+     &  1x,  'FYM_Inp_t_C_ha ', 1x,  'TEMP_C ', 1x, 'RM_TMP ',
+     &  1x, 'RAIN_mm ', 1x, 'PEVAP_mm ',1x, 'SWC_mm ',
+     &  1x,'RM_Moist ', 1x, 'PC ', 1x,  'RM_PC ',  
+     &  1x, 'DPM_t_C_ha ', 1x,  'RPM_t_C_ha ', 
+     &  1x, 'BIO_t_C_ha ', 1x, 'HUM_t_C_ha ',
+     &  1x, 'IOM_t_C_ha ', 1x, 'SOC_t_C_ha ')
+                                                             
 C      
 C run RothC for months 13 to the end: START
 C     
+      k_month = 0
       do i = timeFact+1, nsteps, 1   ! 13 if monthly
       
+	  k_month = k_month + 1
+            
+        if(k_month.eq.timeFact+1)k_month = 1   ! 13 if monthly
+         
+        
          YEAR = t_year(i)
          TEMP = t_tmp(i)
          RAIN = t_rain(i)
@@ -230,12 +252,13 @@ C
          Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0
          
          
-         write(91,9101) C_Inp, FYM_Inp, TEMP,RM_TMP, 
+         write(91,9101) Year, k_month, C_Inp, FYM_Inp, TEMP,RM_TMP, 
      &        RAIN, PEVAP, SWC, RM_Moist, PC, RM_PC,
      &        DPM,RPM,BIO,HUM, IOM, SOC
      
-9101     format(1x, 2f8.3, f8.1, f8.4, 2f8.1, f8.2, 
-     &              f8.4, i8, f8.1, 6f12.4)         
+9101     format(1x, 2i7, f14.3, f16.3, f8.1, f8.4, f9.1, f10.1, f8.2, 
+     &              f10.4, i4, f7.1, f12.4, f12.4, f12.4, f12.4, f12.4,
+     &              f12.4)         
 
 
       if(mod(i, timeFact)== 0)then     ! print out results once a year
@@ -252,7 +275,10 @@ C
       write(81,*) 'Time of operation was ', 
      $    time_end - time_begin, ' seconds'
            
- 103  format(1x, 5x,  i8, 6f9.4, f8.2)  
+ 103  format(1x,  i8, 4x, '12', 6f12.4, f8.2)  
+ 
+      close (71)
+      close (91)
   
       stop
       
