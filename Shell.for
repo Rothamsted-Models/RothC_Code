@@ -156,14 +156,14 @@ C
       SOC = DPM+RPM+Bio+Hum+IOM
       
         write(71,7100)
-7100  format(5x, 'Year', 1x,  'Month ', 
+7100  format(5x, 'Year', 3x,  'Month ', 
      &  1x, 'DPM_t_C_ha ', 1x,  'RPM_t_C_ha ', 
      &  1x, 'BIO_t_C_ha ', 1x, 'HUM_t_C_ha ',
      &  1x, 'IOM_t_C_ha ', 1x, 'SOC_t_C_ha ', 
      &  1x, 'deltaC')     
              
       write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC
-101   format(1x, 5x, i9, 6f12.4)  
+101   format(1x, '       0', 1x, i7, 6f12.4, ' -998.02')  
 
       timeFact = 12 ! monthly
           
@@ -205,11 +205,9 @@ C
          
       Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
       
-
+      write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC, Total_Delta
       
-      write(71,102) j-1, DPM, RPM, Bio, Hum, iom, SOC, Total_Delta
-      
-102   format(1x, 'EQ = ', 1x, i8, 6f12.4 , f8.2)             
+102   format(1x, i8, 1x, i7, 6f12.4 , f8.2)             
 
        write(91,9100)
 9100  format(4x, 'Year ',1x,  'Month ',1x, 'C_Inp_t_C_ha ', 
@@ -275,7 +273,7 @@ C
       write(81,*) 'Time of operation was ', 
      $    time_end - time_begin, ' seconds'
            
- 103  format(1x,  i8, 4x, '12', 6f12.4, f8.2)  
+ 103  format(1x,  i8, 6x, '12', 6f12.4, f8.2)  
  
       close (71)
       close (91)
