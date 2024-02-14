@@ -141,8 +141,8 @@ C read in RothC input data file: data will be passed from other programs at some
       close(11)   
       
       
-      open(71, file='year_results.dat', status ='unknown')     
-      open(91, file='month_results.dat', status ='unknown')
+      open(71, file='year_results.out', status ='unknown')     
+      open(91, file='month_results.out', status ='unknown')
 C
 C READ IN INPUT DATA: END
 C      
