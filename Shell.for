@@ -128,9 +128,11 @@ C read in RothC input data file: data will be passed from other programs at some
 	read(11,*)
 	read(11,*)      
 	read(11,*) 
+	read(11,*)             
       read(11,*)clay, depth, iom, nsteps
       read(11,*)
-      
+      read(11,*)  
+
 	do i = 1, nsteps
 	  read(11,*)t_year(i), t_mod(i), t_tmp(i),t_rain(i),t_evap(i),
      &            t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i)
