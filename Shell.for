@@ -158,18 +158,38 @@ C
       SOC = DPM+RPM+Bio+Hum+IOM
       
         write(71,7100)
-7100  format(5x, 'Year', 3x,  'Month ', 
-     &  1x, 'DPM_t_C_ha ', 1x,  'RPM_t_C_ha ', 
-     &  1x, 'BIO_t_C_ha ', 1x, 'HUM_t_C_ha ',
-     &  1x, 'IOM_t_C_ha ', 1x, 'SOC_t_C_ha ', 
-     &  1x, 'deltaC')     
+7100  format(5x, 'Year,', 2x,  'Month,', 
+     &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
+     &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
+     &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
+     &  1x, ' deltaC')     
              
       write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC
-101   format(1x, '       0', 1x, i7, 6f12.4, ' -998.02')  
+101   format(1x, '       0,', 1x, i6, ',', 6(f11.4, ','), ' -998.02')  
 
       timeFact = 12 ! monthly
           
       test = 100.0
+      
+       write(91,9100)
+9100  format(4x, 'Year,',1x,  'Month,',1x, 'C_Inp_t_C_ha,', 
+     &  1x,  'FYM_Inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
+     &  1x, 'RAIN_mm,', 1x, 'PEVAP_mm,',1x, 'SWC_mm,',
+     &  1x,'RM_Moist,', 1x, 'PC,', 1x,  'RM_PC,',  
+     &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
+     &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
+     &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha ') 
+     
+      YEAR = t_year(1)
+      
+      write(91,9101) Year, j, DPM, RPM, BIO, HUM, IOM, SOC
+     
+9101     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
+     &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
+     &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
+     &        f11.4, ',',f11.4, ',',f11.4)   
+         
+      
       do ! Run to equililibrium: cycles through the first 12 months
        k = k + 1
        j = j + 1 
@@ -196,11 +216,19 @@ C
         
          if(mod(k, timeFact)== 0)then 
            TOC0 = TOC1
-           TOC1 =DPM+RPM+Bio+Hum
+           TOC1 = DPM+RPM+Bio+Hum
            test = abs(TOC1-TOC0)            
          endif       
          
       enddo
+      
+      write(91,9102) Year, j-1, DPM, RPM, BIO, HUM, IOM, SOC
+     
+9102     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
+     &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
+     &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
+     &        f11.4, ',',f11.4, ',',f11.4)   
+     
 C      
 C run RothC to equilibrium: END
 C
@@ -208,17 +236,7 @@ C
       Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
       
       write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC, Total_Delta
-      
-102   format(1x, i8, 1x, i7, 6f12.4 , f8.2)             
-
-       write(91,9100)
-9100  format(4x, 'Year ',1x,  'Month ',1x, 'C_Inp_t_C_ha ', 
-     &  1x,  'FYM_Inp_t_C_ha ', 1x,  'TEMP_C ', 1x, 'RM_TMP ',
-     &  1x, 'RAIN_mm ', 1x, 'PEVAP_mm ',1x, 'SWC_mm ',
-     &  1x,'RM_Moist ', 1x, 'PC ', 1x,  'RM_PC ',  
-     &  1x, 'DPM_t_C_ha ', 1x,  'RPM_t_C_ha ', 
-     &  1x, 'BIO_t_C_ha ', 1x, 'HUM_t_C_ha ',
-     &  1x, 'IOM_t_C_ha ', 1x, 'SOC_t_C_ha ')
+102   format(1x, i8, ',', 1x, i6, ',', 6(f11.4,','),  f8.2)     
                                                              
 C      
 C run RothC for months 13 to the end: START
@@ -252,13 +270,14 @@ C
          Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0
          
          
-         write(91,9101) Year, k_month, C_Inp, FYM_Inp, TEMP,RM_TMP, 
+         write(91,9103) Year, k_month, C_Inp, FYM_Inp, TEMP,RM_TMP, 
      &        RAIN, PEVAP, SWC, RM_Moist, PC, RM_PC,
      &        DPM,RPM,BIO,HUM, IOM, SOC
      
-9101     format(1x, 2i7, f14.3, f16.3, f8.1, f8.4, f9.1, f10.1, f8.2, 
-     &              f10.4, i4, f7.1, f12.4, f12.4, f12.4, f12.4, f12.4,
-     &              f12.4)         
+9103     format(1x, i7, ',', i6, ',', f13.3, ',',f15.3, ',',f7.1, ',',
+     &         f7.4, ',',f8.1, ',',f9.1, ',',f7.2, ',', f9.4, ',',
+     &           i3, ',',f6.1, ',',f11.4, ',',f11.4,',', f11.4, ',',
+     &        f11.4, ',',f11.4, ',',f11.4)        
 
 
       if(mod(i, timeFact)== 0)then     ! print out results once a year
@@ -275,7 +294,7 @@ C
       write(81,*) 'Time of operation was ', 
      $    time_end - time_begin, ' seconds'
            
- 103  format(1x,  i8, 6x, '12', 6f12.4, f8.2)  
+ 103  format(1x,  i7, ',', 6x, '12,', 6(f11.4, ','), f8.2)  
  
       close (71)
       close (91)
