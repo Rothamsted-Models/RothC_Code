@@ -1,7 +1,7 @@
 C******************************************************************************
 C  Wrapper for RothC model 
 C
-C  November 2023
+C  February 2024
 C
 C 
 C  
@@ -17,6 +17,7 @@ C IOM: inert organic matter (t C /ha)
 C nsteps: number of timesteps 
 C
 C year:    year
+C month:   month (1-12)
 C modern:   %modern 
 C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
@@ -53,6 +54,8 @@ C
       
       integer t_year(MAXsteps)
       
+      integer t_month(MAXsteps)
+      
       real*8 t_mod(MAXsteps)
       
       real*8 t_tmp(MAXsteps)
@@ -81,7 +84,7 @@ C
       real*8 DPM_Delta, RPM_Delta, Bio_Delta, Hum_Delta, IOM_Delta
       real*8 Total_Delta
       
-      integer YEAR
+      integer YEAR, MONTH
       
       real*8 TEMP, RAIN, PEVAP
       
@@ -134,8 +137,8 @@ C read in RothC input data file: data will be passed from other programs at some
       read(11,*)  
 
 	do i = 1, nsteps
-	  read(11,*)t_year(i), t_mod(i), t_tmp(i),t_rain(i),t_evap(i),
-     &            t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i)
+	  read(11,*)t_year(i), t_month(i), t_mod(i), t_tmp(i),t_rain(i),
+     &      t_evap(i), t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i)
       enddo
       
       close(11)   
