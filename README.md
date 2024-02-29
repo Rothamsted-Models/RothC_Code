@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Roth C models the turnover of organic carbon in non-waterlogged top-soil.  It accounts for the effects of soil texture, temperature, moisture content and plant cover on the turnover process. It uses a monthly time step to calculate total organic carbon (t ha<sup>-1</sup>), microbial biomass carbon (t ha<sup>-1</sup>) and Δ<sup>14</sup>C (from which the equivalent radiocarbon age of the soil can be calculated). 
+RothC models the turnover of organic carbon in non-waterlogged top-soil.  It accounts for the effects of soil texture, temperature, moisture content and plant cover on the turnover process. It uses a monthly time step to calculate total organic carbon (t ha<sup>-1</sup>), microbial biomass carbon (t ha<sup>-1</sup>) and Δ<sup>14</sup>C (from which the equivalent radiocarbon age of the soil can be calculated). 
 
 ## Development history
 
@@ -21,7 +21,7 @@ Giongo et al. (2020) created a daily version and modified the soil water dynamic
  
 ## Description of files included
 
-### RothC_description.docx
+### RothC_description.pdf
 This file contains the description of the model.
 
 
