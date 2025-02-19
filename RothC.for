@@ -46,7 +46,8 @@ C  SWC:       soil moisture deficit (mm per soil depth)
 C  RM_TMP:    rate modifying fator for temperature (0.0 - ~5.0)
 C  RM_Moist:  rate modifying fator for moisture (0.0 - 1.0)
 C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
-
+C 
+C Febraury 2025 this is a branch for the Farina (2013) version of the model
 C
 C******************************************************************************      
       Subroutine RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC,

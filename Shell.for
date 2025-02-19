@@ -31,7 +31,8 @@ C  Note:
 C  The shell reads in an example data set from RothC_input.dat, if your data is in another format you can change the read statements.
 C
 C  This model uses the first 12 months of weather (temp, rain, and evap), and land management information (C input, FYM input, and plant cover) to run to equilibrium    
-C
+C 
+C Febraury 2025 this is a branch for the Farina (2013) version of the model
 
 
       program RothC_shell
