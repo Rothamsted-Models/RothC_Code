@@ -2,18 +2,34 @@ C******************************************************************************
 C  RothC model
 C
 C  February 2024
-
+C
 C  
 C  Kevin Coleman
 C
 C  This is the code for RothC 
 C
+C  April 2025 this is a branch for the Farina (2013) version of the model
+C
 C INPUTS: 
 C
-C clay:  clay content of the soil (units: %)
-C depth: depth of topsoil (units: cm)
-C IOM: inert organic matter (t C /ha)
-C nsteps: number of timesteps 
+C clay:        clay content of the soil (units: %)
+C depth:       depth of topsoil (units: cm)
+C IOM:         inert organic matter (t C /ha)
+C nsteps:      number of timesteps 
+C
+C The following are needed for the Farina modification to the model (Farina et al, 2013, Geoderma. 200, 18-30, 10.1016/j.geoderma.2013.01.021)
+C
+C slit:        silt content of the soil (units: %) 
+C BD:          bulk density (units: g/cm3) for the farina (2013) version
+C OC:          organic carbon (units: %) for the farina (2013) version
+C minRM_Moist: the minimum value the rate modifying factor for moisture can be (units: -, default=0.2)
+C
+C The following switches are needed to allow the user to choose which model option to run
+C
+C opt_RMmoist  1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+C
+C opt_SMDbare  1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+C
 C
 C year:    year
 C modern:   %modern 
@@ -42,18 +58,17 @@ C  Bio_Rage:   radiocarbon age of Bio
 C  HUM_Rage:   radiocarbon age of Hum
 C  Total_Rage: radiocarbon age of SOC (/ TOC)
 C
-C  SWC:       soil moisture deficit (mm per soil depth)
+C  SMD:       soil moisture deficit (mm per soil depth)  SMD
 C  RM_TMP:    rate modifying fator for temperature (0.0 - ~5.0)
 C  RM_Moist:  rate modifying fator for moisture (0.0 - 1.0)
 C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
-C 
-C Febraury 2025 this is a branch for the Farina (2013) version of the model
 C
 C******************************************************************************      
       Subroutine RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC,
      &         DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage,
      &         modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
-     &         C_Inp, FYM_Inp, SWC, RM_TMP, RM_Moist, RM_PC) 
+     &         C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &         opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist) 
          
       
       
@@ -63,6 +78,10 @@ C******************************************************************************
       
       integer PC
       
+      integer opt_RMmoist   ! 1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+      
+      integer opt_SMDbare   ! 1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+      
       real*8 DPM,RPM,BIO,HUM,IOM,SOC
       
       real*8 DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage
@@ -71,13 +90,21 @@ C******************************************************************************
       
       real*8 clay, depth
       
+      real*8 silt  ! silt content (units: %) needed for the farina (2013) version
+     
+      real*8 BD  ! bulk density (units: g/cm3) needed for the farina (2013) version
+               
+      real*8 OC  ! organic carbon (units: %) needed for the farina (2013) version
+      
+      real*8 minRM_Moist  ! (units: -, default=0.2) needed for the farina (2013) version
+      
       real*8 DPM_RPM
       
       real*8 TEMP, RAIN, PEVAP
       
       real*8 C_Inp, FYM_Inp
       
-      real*8 SWC
+      real*8 SMD
        
       real*8 RM_TMP, RM_Moist, RM_PC   
       
@@ -86,9 +113,12 @@ C******************************************************************************
        
 C Calc RMF's i've create a subroutine for each to make it easier to add others or replace existing with new.     
       call RMF_Tmp(TEMP, RM_TMP)
-      call RMF_Moist(RAIN, PEVAP, clay, depth, PC, SWC, RM_Moist)
+      call RMF_Moist(RAIN, PEVAP, clay, depth, PC, SMD, RM_Moist, 
+     &              opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)
       call RMF_PC(PC,RM_PC)
 
+      
+      
 C combine RMF's into one.      
       RateM = RM_TMP*RM_Moist*RM_PC
       
@@ -127,44 +157,113 @@ C**********************************************************************
 C       Calculates the moisture modifying factor  
 C**********************************************************************     
 C
-      Subroutine RMF_Moist (RAIN, PEVAP, clay, depth, PC, SWC, RM_Moist)
-
+      Subroutine RMF_Moist (RAIN, PEVAP, clay, depth, PC, SMD, RM_Moist,
+     &         opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)
+      
       implicit none
+      
+      integer opt_RMmoist    ! 1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+      
+      integer opt_SMDbare    ! 1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
       
       integer PC
 
       real*8 RAIN, PEVAP
       real*8 clay, depth
+      
+      real*8 silt, BD, OC  ! needed for the farina (2013) version
+      
       real*8 RM_Moist
       
-      real*8 SWC
+      real*8 SMD
       
       real*8 DF
       
       real*8 SMDMax, SMDMaxAdj, SMD1bar, SMDBare 
       
-      real*8, parameter :: RMFMax = 1.0, RMFMin = 0.2
+      real*8 SMD15bar, SMD15barAdj, SMD1000bar  ! for the farina (2013) version
+      
+      real*8, parameter :: RMFMax = 1.0
+      
+      real*8 minRM_Moist
 
-C calc soil water functions properties
-      SMDMax=-(20+1.3*clay-0.01*(clay*clay))
-      SMDMaxAdj = SMDMax * depth / 23.0
-      SMD1bar = 0.444 * SMDMaxAdj
-      SMDBare = 0.556 * SMDMaxAdj
+      real*8 X0, X1, X2, X3, D2
+
+       
+!C calc soil water functions properties       
+      IF(opt_RMmoist.eq.1)THEN                   ! use standard RothC soil water properties 
+        SMD15bar=-(20+1.3*clay-0.01*(clay*clay))
+        SMD15barAdj = SMD15bar * depth / 23.0
+        SMD1bar = 0.444 * SMD15barAdj
+      ELSE									   ! Van Genuchten soil properties and soil is allowed to be drier 
+        CALL CALC_SM_VG(clay, silt, BD, OC, depth, 
+     &                       X0, X1, X2, X3)
+        SMD15bar = X2  ! X2 has been adjusted for depth in CALC_SM_SM
+        SMD15barAdj = SMD15bar
+        SMD1bar = X1
+        SMD1000bar = X3
+      ENDIF 
+      
+      IF(opt_SMDbare.EQ.1)THEN                   ! Standard RothC bareSMD
+         IF(opt_RMmoist.EQ.1)THEN
+           SMDBare = 0.556 * SMD15barAdj
+	   ELSE
+           SMDBare = SMD15barAdj - (0.6388/0.8) * (SMD15barAdj-SMD1bar)
+	   ENDIF
+	ELSE                                       ! bareSMD is set to wilting point -15bar (could be better for dry soils)
+        SMDBare = SMD15barAdj
+	ENDIF
+      write(204,20401)  SMD1bar, SMDBare, SMD15barAdj, SMD1000bar
+20401 format(1x, 4f12.2)
+      
+      IF(opt_RMmoist.EQ.1)THEN                   ! use standard RothC soil water properties   
+        SMDMaxAdj = SMD15barAdj
+      ELSEIF(opt_RMmoist.EQ.2)THEN               ! Van Genuchten soil properties and soil is allowed to be drier 
+        SMDMaxAdj = SMD1000bar
+      ENDIF      
       
       DF = RAIN - 0.75 * PEVAP
       
-      if(PC.eq.1)then
-        SWC = MAX(SMDMAXadj,MIN(0.0,SWC+DF))
-      else
-        SWC = MAX(MIN(SMDBare,SWC),MIN(0.0,SWC+DF))
-      endif  
+      IF(PC.eq.1)THEN
+        SMD = MAX(SMDMAXadj,MIN(0.0,SMD+DF))
+      ELSE
+        SMD = MAX(MIN(SMDBare,SMD),MIN(0.0,SMD+DF))
+      ENDIF
       
-      if(SWC.gt.SMD1bar)then
-        RM_Moist = 1.0
+
+      
+      IF(opt_RMmoist.eq.1)THEN                   ! use standard RothC soil water properties 
+      
+          IF(SMD.gt.SMD1bar)THEN
+            RM_Moist = 1.0
+          ELSE
+            RM_Moist = (minRM_Moist + (RMFMax - minRM_Moist) * 
+     &                (SMD15barAdj - SMD) / (SMD15barAdj - SMD1bar) )   
+          ENDIF
+          
+      ELSE                                      ! Van Genuchten soil properties and soil is allowed to be drier 
+          IF(SMD.gt.SMD1bar)THEN
+            RM_Moist = 1.0
+          ELSEIF(SMD.gt.SMD15barAdj)THEN
+            RM_Moist = (minRM_Moist + (RMFMax - minRM_Moist) * 
+     &                (SMD15barAdj - SMD) / (SMD15barAdj - SMD1bar) )   
+          ELSE
+            RM_Moist = minRM_Moist       
+          ENDIF
+      ENDIF
+       
+       
+       
+      if(opt_RMmoist.eq.1)then 
+         write(101,1001)SMDMaxAdj, SMDBare,  rain,
+     &      0.75*pevap, DF,SMD,PC, RM_Moist     
       else
-        RM_Moist = (RMFMin + (RMFMax - RMFMin) * 
-     &              (SMDMaxAdj - SWC) / (SMDMaxAdj - SMD1bar) )   
+       write(101,1002)x0, x1, x2, x3, SMDMaxAdj, SMDBare,  rain,
+     &      0.75*pevap, DF,SMD, PC, RM_Moist
       endif
+      
+1001  format(41x, 6f10.3, i6, f10.4)       
+1002  format(1x, 4f10.3, 6f10.3, i6,f10.4) 
 
       RETURN
       END
@@ -390,4 +489,106 @@ C calculate rage of each pool.
       endif
       
       RETURN
+      END
+      
+C
+C ******************************************************************************
+C ******************************************************************************
+C
+C
+      SUBROUTINE CALC_SM_VG(clayper, siltper, BD, OC, depth, 
+     &                       X0, X1, X2, X3)
+
+      IMPLICIT none
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c    clay - clay (%)
+c    silt - silt (%)
+c    BD  - Bulk density (g cm-3)
+c    OC - Organic carbon (%)
+c    depth - depth of soil sample (cm) 
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      double precision clayper, siltper, BD, OC, depth
+
+	integer mbars(5)
+
+	integer i 
+
+	double precision alpha, thetaS, n, thetaR, m, ksat, l_star, l, t
+
+      double precision wc(5)
+
+      double precision wcSAT
+	double precision wcFC
+	double precision wc1
+	double precision wcWP
+	double precision wc1000
+
+c     X0 - Soil moisture deficit (between FC and Saturation) this is positive, so that FC reminds zero
+c     X1 - Soil moisture deficit (between FC and 1 bar)
+c     X2 - maximum Soil moisture deficit (between FC and WP)
+c     X3 - Soil moisture deficit (between FC and 1000 bar)
+      double precision X0, X1, X2, X3
+
+      mbars(1) = 0 
+      mbars(2) = 50
+	mbars(3) = 1000
+	mbars(4) = 15000
+	mbars(5) = 1000000
+
+	t = 1
+
+      alpha=EXP(-14.96+0.03135*clayper+0.0351*siltper+0.646*(OC*1.72)
+     &     +15.29*BD-0.192*t-4.671*BD**2-0.000781*clayper**2
+     &     -0.00687*(OC*1.72)**2
+     &     +0.0449*(OC*1.72)**-1+0.0663*log(siltper)
+     &     +0.1482*log(OC*1.72)
+     &     -0.04546*BD*siltper-0.4852*BD*(OC*1.72)+0.00673*clayper*t)
+
+      thetaS=(0.7919+0.001691*clayper-0.29619*BD-0.000001491*siltper**2
+     &     +0.0000821*(OC*1.72)**2+0.02427*clayper**-1
+     &     +0.01113*siltper**-1+0.01472*log(siltper)
+     &     -0.0000733*(OC*1.72)*clayper-0.000619*BD*clayper
+     &     -0.001183*BD*(OC*1.72)-0.0001664*siltper*t)
+
+      n=EXP(-25.23 -0.02195*clayper +0.0074*siltper -0.194*(OC*1.72)
+     &     +45.5*BD-7.24*BD**2 +0.0003658*clayper**2
+     &     +0.002885*(OC*1.72)**2 -12.81*BD**-1 -0.1524*siltper**-1
+     &     -0.01958*(OC*1.72)**-1 -0.2876*log(siltper)
+     &     -0.0709*log(OC*1.72) -44.6*log(BD) -0.02264*BD*clayper
+     &     +0.0896*BD*(OC*1.72) +0.00718*clayper*t)+1
+
+      thetaR=0.01
+
+      m=1-1/n
+
+      ksat=EXP(7.755 +0.0352*siltper +0.93*t -0.967*BD**2 
+     &     -0.000484*clayper**2 -0.000322*siltper**2
+     &     +0.001*siltper**-1 -0.0748*(OC*1.72)**-1
+     &     -0.643*log(siltper) -0.01398*BD*clayper -0.1673*BD*(OC*1.72)
+     &     +0.02986*clayper*t -0.03305*siltper*t)
+
+      l_star=(0.0202 +0.0006193*clayper**2 -0.001136*(OC*1.72)**2
+     &     -0.2316*log(OC*1.72) -0.03544*BD*clayper +0.00283*BD*siltper
+     &     +0.0488*BD*OC*1.72)
+
+      l=10*(EXP(l_star)-1)/(EXP(l_star)+1)
+
+
+      do i = 1, 5
+        wc(i)=thetaR + (thetaS-thetaR)/ (1+(alpha*mbars(i))**n)**m
+      enddo
+
+      wcSAT  = wc(1)
+	wcFC   = wc(2)
+	wc1    = wc(3)
+	wcWP   = wc(4)
+	wc1000 = wc(5)
+     
+      X0 = (wcSAT  - wcFC)*10*depth
+	X1 = (wc1    - wcFC)*10*depth
+	X2 = (wcWP   - wcFC)*10*depth
+	X3 = (wc1000 - wcFC)*10*depth
+      
+	RETURN
       END
