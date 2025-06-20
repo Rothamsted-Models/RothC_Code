@@ -8,7 +8,7 @@ C  Kevin Coleman
 C
 C  This is the code for RothC 
 C
-C  April 2025 this is a branch for the Farina (2013) version of the model
+C  June 2025 this is a branch for the Farina (2013) version of the model
 C
 C INPUTS: 
 C
@@ -26,9 +26,12 @@ C minRM_Moist: the minimum value the rate modifying factor for moisture can be (
 C
 C The following switches are needed to allow the user to choose which model option to run
 C
-C opt_RMmoist  1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
-C
-C opt_SMDbare  1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+C opt_RMmoist !  1: Standard RothC soil water parameters,
+C             !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
+C             !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
+C      
+C opt_SMDbare !  1: Standard RothC bareSMD, 
+C             !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
 C
 C
 C year:    year
@@ -64,7 +67,7 @@ C  RM_Moist:  rate modifying fator for moisture (0.0 - 1.0)
 C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
 C
 C******************************************************************************      
-      Subroutine RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC,
+      Subroutine RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
      &         DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage,
      &         modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
      &         C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
@@ -78,11 +81,14 @@ C******************************************************************************
       
       integer PC
       
-      integer opt_RMmoist   ! 1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+      integer opt_RMmoist !  1: Standard RothC soil water parameters,
+                          !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
+                          !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
       
-      integer opt_SMDbare   ! 1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
-      
-      real*8 DPM,RPM,BIO,HUM,IOM,SOC
+      integer opt_SMDbare !  1: Standard RothC bareSMD, 
+                          !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+
+      real*8 DPM,RPM,BIO,HUM,IOM,SOC, total_CO2
       
       real*8 DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage
       
@@ -124,9 +130,9 @@ C combine RMF's into one.
       
 
       
-      call decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, DPM_Rage,  
-     &       RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC, RateM,
-     &       clay, C_Inp, FYM_Inp, DPM_RPM)
+      call decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, total_CO2,   
+     &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC,
+     &     RateM, clay, C_Inp, FYM_Inp, DPM_RPM)
      
      
       return
@@ -162,9 +168,12 @@ C
       
       implicit none
       
-      integer opt_RMmoist    ! 1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+      integer opt_RMmoist !  1: Standard RothC soil water parameters,
+                          !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
+                          !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
       
-      integer opt_SMDbare    ! 1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+      integer opt_SMDbare !  1: Standard RothC bareSMD, 
+                          !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
       
       integer PC
 
@@ -191,11 +200,11 @@ C
 
        
 !C calc soil water functions properties       
-      IF(opt_RMmoist.eq.1)THEN                   ! use standard RothC soil water properties 
+      IF(opt_RMmoist.eq.1)THEN                   ! 1: use standard RothC soil water properties 
         SMD15bar=-(20+1.3*clay-0.01*(clay*clay))
         SMD15barAdj = SMD15bar * depth / 23.0
         SMD1bar = 0.444 * SMD15barAdj
-      ELSE									   ! Van Genuchten soil properties and soil is allowed to be drier 
+      ELSE									   ! 2 or 3: Van Genuchten soil properties  !!  and soil is allowed to be drier 
         CALL CALC_SM_VG(clay, silt, BD, OC, depth, 
      &                       X0, X1, X2, X3)
         SMD15bar = X2  ! X2 has been adjusted for depth in CALC_SM_SM
@@ -205,18 +214,16 @@ C
       ENDIF 
       
       IF(opt_SMDbare.EQ.1)THEN                   ! Standard RothC bareSMD
-         IF(opt_RMmoist.EQ.1)THEN
+         IF(opt_RMmoist.EQ.1)THEN       ! 
            SMDBare = 0.556 * SMD15barAdj
-	   ELSE
+	   ELSE  ! i think we need this option if option 3 standard  
            SMDBare = SMD15barAdj - (0.6388/0.8) * (SMD15barAdj-SMD1bar)
 	   ENDIF
 	ELSE                                       ! bareSMD is set to wilting point -15bar (could be better for dry soils)
         SMDBare = SMD15barAdj
-	ENDIF
-      write(204,20401)  SMD1bar, SMDBare, SMD15barAdj, SMD1000bar
-20401 format(1x, 4f12.2)
+	ENDIF    
       
-      IF(opt_RMmoist.EQ.1)THEN                   ! use standard RothC soil water properties   
+      IF(opt_RMmoist.EQ.1.or.opt_RMmoist.EQ.3)THEN                   ! use standard RothC soil water properties   
         SMDMaxAdj = SMD15barAdj
       ELSEIF(opt_RMmoist.EQ.2)THEN               ! Van Genuchten soil properties and soil is allowed to be drier 
         SMDMaxAdj = SMD1000bar
@@ -229,16 +236,14 @@ C
       ELSE
         SMD = MAX(MIN(SMDBare,SMD),MIN(0.0,SMD+DF))
       ENDIF
-      
-
-      
-      IF(opt_RMmoist.eq.1)THEN                   ! use standard RothC soil water properties 
+        
+      IF(opt_RMmoist.eq.1.or.opt_RMmoist.eq.3)THEN                   ! use standard RothC soil water properties 
       
           IF(SMD.gt.SMD1bar)THEN
             RM_Moist = 1.0
           ELSE
             RM_Moist = (minRM_Moist + (RMFMax - minRM_Moist) * 
-     &                (SMD15barAdj - SMD) / (SMD15barAdj - SMD1bar) )   
+     &                (SMD15barAdj - SMD) / (SMD15barAdj - SMD1bar) ) 
           ENDIF
           
       ELSE                                      ! Van Genuchten soil properties and soil is allowed to be drier 
@@ -251,19 +256,6 @@ C
             RM_Moist = minRM_Moist       
           ENDIF
       ENDIF
-       
-       
-       
-      if(opt_RMmoist.eq.1)then 
-         write(101,1001)SMDMaxAdj, SMDBare,  rain,
-     &      0.75*pevap, DF,SMD,PC, RM_Moist     
-      else
-       write(101,1002)x0, x1, x2, x3, SMDMaxAdj, SMDBare,  rain,
-     &      0.75*pevap, DF,SMD, PC, RM_Moist
-      endif
-      
-1001  format(41x, 6f10.3, i6, f10.4)       
-1002  format(1x, 4f10.3, 6f10.3, i6,f10.4) 
 
       RETURN
       END
@@ -292,9 +284,9 @@ C**********************************************************************
 C      calculates the decomposition and radiocarbon 
 C**********************************************************************     
 C
-      Subroutine decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, DPM_Rage, 
-     &       RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC, RateM,  
-     &       clay, C_Inp, FYM_Inp, DPM_RPM)
+      Subroutine decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, total_CO2,
+     &       DPM_Rage,RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC,
+     &       RateM, clay, C_Inp, FYM_Inp, DPM_RPM)
 C
       implicit none
       
@@ -311,7 +303,7 @@ C rate constant are params so don't need to be passed
       
       real*8 tstep, exc
       
-      real*8 DPM,RPM,BIO,HUM,IOM, SOC
+      real*8 DPM,RPM,BIO,HUM,IOM, SOC, total_CO2
       
       real*8 modernC
       
@@ -399,6 +391,8 @@ C update C pools
       RPM = RPM1
       Bio = Bio1 + DPM_bio + RPM_bio + Bio_bio + Hum_bio
       Hum = Hum1 + DPM_hum + RPM_hum + Bio_hum + Hum_hum    
+      
+      total_CO2 = total_CO2 + DPM_co2 + RPM_co2 + Bio_co2 + Hum_co2
       
 C split plant C to DPM and RPM 
       PI_C_DPM = DPM_RPM / (DPM_RPM + 1.0) * C_Inp

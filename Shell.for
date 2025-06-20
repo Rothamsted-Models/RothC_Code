@@ -3,7 +3,7 @@ C  Wrapper for RothC model
 C
 C  February 2024
 C
-C  April 2025 this is the code that includes the Farina et al (2013) version of the model 
+C  June 2025 this is the code that includes the Farina et al (2013) version of the model 
 C
 C  Farina et al, 2013, Geoderma. 200, 18-30, 10.1016/j.geoderma.2013.01.021
 C  
@@ -27,10 +27,12 @@ C minRM_Moist: the minimum value the rate modifying factor for moisture can be (
 C
 C the following switches are needed to allow the user to choose which model option to run
 C
-C opt_RMmoist  1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
-C
-C opt_SMDbare  1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
-
+C opt_RMmoist !  1: Standard RothC soil water parameters,
+C             !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
+C             !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
+C      
+C opt_SMDbare !  1: Standard RothC bareSMD, 
+C             !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
 C
 C year:     year
 C month:    month (1-12)
@@ -99,7 +101,7 @@ C
       real*8 minRM_Moist ! (units: -, default=0.2) needed for the farina (2013) version
       
       
-      real*8 DPM, RPM, BIO, HUM, IOM, SOC
+      real*8 DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
       
       real*8 DPM_Rage,RPM_Rage,BIO_Rage,HUM_Rage,IOM_Rage,Total_Rage
       
@@ -109,9 +111,12 @@ C
       
       integer YEAR, MONTH
       
-      integer opt_RMmoist !  1: Standard RothC soil water parameters, 2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar) 
+      integer opt_RMmoist !  1: Standard RothC soil water parameters,
+                          !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
+                          !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
       
-      integer opt_SMDbare !  1: Standard RothC bareSMD, 2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+      integer opt_SMDbare !  1: Standard RothC bareSMD, 
+                          !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
       
       real*8 TEMP, RAIN, PEVAP
       
@@ -141,6 +146,8 @@ C
       HUM = 0.0
       IOM = 0.0
       
+      total_CO2 = 0.0
+      
       DPM_Rage = 0.0
       RPM_Rage = 0.0
       BIO_Rage = 0.0
@@ -156,7 +163,6 @@ C READ IN INPUT DATA: START
 C
 C read in RothC input data file: data will be passed from other programs at some point  
       open(11, file='RothC_input.dat', status='unknown')    
-!      open(11, file='RothC_input_Morocco.dat', status='unknown') 
 	read(11,*)               ! line is for info only 
 	read(11,*)               ! line is for info only 
 	read(11,*)               ! line is for info only 
@@ -201,10 +207,10 @@ C
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
      &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
-     &  1x, ' deltaC')     
+     &  1x, 'CO2_t_C_ha,', 1x, ' deltaC')     
              
-      write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC
-101   format(1x, '       0,', 1x, i6, ',', 6(f11.4, ','), ' -998.02')  
+      write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
+101   format(1x, '       0,', 1x, i6, ',', 7(f11.4, ','), ' -998.02')  
 
       timeFact = 12 ! monthly
           
@@ -217,16 +223,17 @@ C
      &  1x,'RM_Moist,', 1x, 'PC,', 1x,  'RM_PC,',  
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
      &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
-     &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha ') 
+     &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
+     &  1x, 'CO2_t_C_ha') 
      
       YEAR = t_year(1)
       
-      write(91,9101) Year, j, DPM, RPM, BIO, HUM, IOM, SOC
+      write(91,9101) Year, j, DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
      
 9101     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
      &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
      &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
-     &        f11.4, ',',f11.4, ',',f11.4)   
+     &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)   
          
       
       do ! Run to equililibrium: cycles through the first 12 months
@@ -248,7 +255,7 @@ C
          
          modernC = t_mod(k) / 100.0             
          
-         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, 
+         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
      &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
@@ -262,12 +269,14 @@ C
          
       enddo
       
-      write(91,9102) Year, j-1, DPM, RPM, BIO, HUM, IOM, SOC
+      total_CO2 = 0.0 ! reset CO2 to zero after the equilibrium run
+      
+      write(91,9102) Year, j-1, DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
      
 9102     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
      &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
      &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
-     &        f11.4, ',',f11.4, ',',f11.4)   
+     &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)   
      
 
 C      
@@ -276,8 +285,9 @@ C
          
       Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
       
-      write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC, Total_Delta
-102   format(1x, i8, ',', 1x, i6, ',', 6(f11.4,','),  f8.2)     
+      write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC, total_CO2, 
+     &              Total_Delta
+102   format(1x, i8, ',', 1x, i6, ',', 7(f11.4,','),  f8.2)     
                                                              
 C      
 C run RothC for months 13 to the end: START
@@ -303,7 +313,7 @@ C
          
          modernC = t_mod(i) / 100.0
            
-         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, 
+         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
      &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
@@ -314,16 +324,17 @@ C
          
          write(91,9103) Year, k_month, C_Inp, FYM_Inp, TEMP,RM_TMP, 
      &        RAIN, PEVAP, SMD, RM_Moist, PC, RM_PC,
-     &        DPM,RPM,BIO,HUM, IOM, SOC
+     &        DPM,RPM,BIO,HUM, IOM, SOC, total_CO2
      
 9103     format(1x, i7, ',', i6, ',', f13.3, ',',f15.3, ',',f7.1, ',',
      &         f7.4, ',',f8.1, ',',f9.1, ',',f7.2, ',', f9.4, ',',
      &           i3, ',',f6.1, ',',f11.4, ',',f11.4,',', f11.4, ',',
-     &        f11.4, ',',f11.4, ',',f11.4)        
+     &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)        
 
 
       if(mod(i, timeFact)== 0)then     ! print out results once a year
-        write(71,103) year, DPM, RPM, Bio, Hum, IOM, SOC, Total_Delta
+        write(71,103) year, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2, 
+     &                Total_Delta
       endif
          
       enddo  
@@ -333,10 +344,10 @@ C
       
       call cpu_time (time_end)
       
-      write(81,*) 'Time of operation was ', 
-     $    time_end - time_begin, ' seconds'
+!      write(81,*) 'Time of operation was ', 
+!     $    time_end - time_begin, ' seconds'
            
- 103  format(1x,  i7, ',', 6x, '12,', 6(f11.4, ','), f8.2)  
+ 103  format(1x,  i7, ',', 6x, '12,', 7(f11.4, ','), f8.2)  
  
       close (71)
       close (91)
