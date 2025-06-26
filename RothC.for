@@ -496,6 +496,17 @@ C
       IMPLICIT none
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+c Calculates the soil properties using Wosten et al. (1999) based on van Genuchten (1980).
+c
+c van Genuchten, M.T., 1980. A closed-form equation for predicting the hydraulic conductivity of unsaturated soils. 
+c SSSAJ, 44, 892-898, 
+c
+c Wosten, J.H.M., Lilly, A., Nemes, A., Le Bas, C., 1999. 
+c Development and use of a database of hydraulic properties of European soils. 
+c Geoderma. 90, 169-185, http://dx.doi.org/10.1016/s0016-7061(98)00132-3
+c
+c
 c    clay - clay (%)
 c    silt - silt (%)
 c    BD  - Bulk density (g cm-3)
@@ -530,7 +541,8 @@ c     X3 - Soil moisture deficit (between FC and 1000 bar)
 	mbars(4) = 15000
 	mbars(5) = 1000000
 
-	t = 1
+	t = 1   ! note t = topsoil, in Wosten et al 1999, topsoil and subsoil have values 1 or 0
+              ! RothC only models topsoils so t is always 1
 
       alpha=EXP(-14.96+0.03135*clayper+0.0351*siltper+0.646*(OC*1.72)
      &     +15.29*BD-0.192*t-4.671*BD**2-0.000781*clayper**2
