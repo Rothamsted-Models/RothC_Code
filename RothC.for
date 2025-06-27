@@ -507,8 +507,8 @@ c Development and use of a database of hydraulic properties of European soils.
 c Geoderma. 90, 169-185, http://dx.doi.org/10.1016/s0016-7061(98)00132-3
 c
 c
-c    clay - clay (%)
-c    silt - silt (%)
+c    clayper - clay (%)
+c    siltper - silt (%)
 c    BD  - Bulk density (g cm-3)
 c    OC - Organic carbon (%)
 c    depth - depth of soil sample (cm) 
@@ -519,7 +519,12 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 	integer i 
 
-	double precision alpha, thetaS, n, thetaR, m, ksat, l_star, l, t
+	double precision alpha, thetaS, n, thetaR, m, t
+
+C kstar (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
+C The calculations have been left in the code in case you wish to use them, but commented out
+C
+C      double precision ksat, l_star, l
 
       double precision wc(5)
 
@@ -568,17 +573,21 @@ c     X3 - Soil moisture deficit (between FC and 1000 bar)
 
       m=1-1/n
 
-      ksat=EXP(7.755 +0.0352*siltper +0.93*t -0.967*BD**2 
-     &     -0.000484*clayper**2 -0.000322*siltper**2
-     &     +0.001*siltper**-1 -0.0748*(OC*1.72)**-1
-     &     -0.643*log(siltper) -0.01398*BD*clayper -0.1673*BD*(OC*1.72)
-     &     +0.02986*clayper*t -0.03305*siltper*t)
-
-      l_star=(0.0202 +0.0006193*clayper**2 -0.001136*(OC*1.72)**2
-     &     -0.2316*log(OC*1.72) -0.03544*BD*clayper +0.00283*BD*siltper
-     &     +0.0488*BD*OC*1.72)
-
-      l=10*(EXP(l_star)-1)/(EXP(l_star)+1)
+      
+C kstar (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
+C The calculations have been left in the code in case you wish to use them, but commented out
+C
+C      ksat=EXP(7.755 +0.0352*siltper +0.93*t -0.967*BD**2 
+C     &     -0.000484*clayper**2 -0.000322*siltper**2
+C     &     +0.001*siltper**-1 -0.0748*(OC*1.72)**-1
+C     &     -0.643*log(siltper) -0.01398*BD*clayper -0.1673*BD*(OC*1.72)
+C     &     +0.02986*clayper*t -0.03305*siltper*t)
+C     
+C      l_star=(0.0202 +0.0006193*clayper**2 -0.001136*(OC*1.72)**2
+C     &     -0.2316*log(OC*1.72) -0.03544*BD*clayper +0.00283*BD*siltper
+C     &     +0.0488*BD*OC*1.72)
+C     
+C      l=10*(EXP(l_star)-1)/(EXP(l_star)+1)
 
 
       do i = 1, 5
