@@ -521,7 +521,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 	double precision alpha, thetaS, n, thetaR, m, t
 
-C kstar (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
+C ksat (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
 C The calculations have been left in the code in case you wish to use them, but commented out
 C
 C      double precision ksat, l_star, l
@@ -574,7 +574,7 @@ c     X3 - Soil moisture deficit (between FC and 1000 bar)
       m=1-1/n
 
       
-C kstar (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
+C ksat (saturated hydraulic conductivity), l_star and l are calculated in Wosten and van Genuchten but not needed to calculated the soil properties for RothC 
 C The calculations have been left in the code in case you wish to use them, but commented out
 C
 C      ksat=EXP(7.755 +0.0352*siltper +0.93*t -0.967*BD**2 
