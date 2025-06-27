@@ -1,11 +1,10 @@
 example input data to run the Farina verion of RothC for a number of years
 clay and depth are only needed once, other data are monthly jan-dec 
    (-)       (-)
- iwopt  iBareSMD
+ opt_RMmoist  opt_SMDbare
     1          1
  (%)     (cm)  (t C/ha)      (-)      (%) (g/m3)     (%)   (-)
-clay	depth	    iom   nsteps  siltper     BD      OC    Y2
-23.4	23.0	 3.0041      840    58.6      1.27  0.94   0.1
+23.4	23.0	 3.0041      840    58.6      1.27  0.94   0.2
 (-)    (-)       (%)    (C)     (mm)    (mm)  (t C/ha) (t C/ha) (-)      (-) 
 year  month    modern	Tmp	Rain	Evap   C_inp	FYM	PC    DPM_RPM
 1	1	100	3.73	52.2	6.6	0	0	1	1.44
