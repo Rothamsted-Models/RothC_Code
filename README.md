@@ -10,11 +10,11 @@ The first version of RothC created by David Jenkinson and James Rayner in 1977 (
 
 In 1987 an updated version was published, see Jenkinson et al. (1987).  This version included the prediction of the radiocarbon age of the soil, the pools POM (physically stabilized organic matter) and COM (chemically stabilized organic matter) were replaced with Hum (humified organic matter) and IOM (inert organic matter), and the microbial biomass pool was split into BioA (autochthonous biomass) and BioZ (zymogenous biomass).  
 
-**In 1990, the two biomass pools were combined into a single pool (Jenkinson, 1990) this version is the standard version of the model, that this code refers to.**
+**In 1990, the two biomass pools were combined into a single pool (Jenkinson, 1990) this version is the standard version of the model version 1.0.0**
+
+**Farina et al. (2013) modified the soil water dynamics for semi-arid regions, this has been incorporated into version 2.0.0 (retaining the functionality of version 1.0.0)**
 
 Other published developments of the model include:
-
-Farina et al. (2013) modified the soil water dynamics for semi-arid regions.
 
 Giongo et al. (2020) created a daily version and modified the soil water dynamics, for Caatinga shrublands, in the semiarid region, North-East Brazil.
 
@@ -40,7 +40,13 @@ The file can be used to create a standalone exe, or you can replace it with your
 ### RothC_input.dat  
 This file contains input variables for the model.  
 
-At the start of the file values for **clay** (%), **soil depth** (cm), **inert organic matter** (IOM, t C ha<sup>-1</sup>) and **number of steps** (nsteps) are recorded.  
+Value for the **opt_RMmoist** option can be 1, 2, or 3
+Value for the **opt_SMDbare** option can be 1 or 2
+
+Then values for **clay** (%), **soil depth** (cm), **inert organic matter** (IOM, t C ha<sup>-1</sup>),  **number of steps** (nsteps),  **silt** (%), **bulk density** (BD, g cm<sup>-3</sup>), **organic carbon** (OC, %), and **minRM_Moist** which is the minimum value to be used for the rate-modifying for soil moisture (default = 0.2) are recorded.  
+
+The **last four variables** are only read in when **opt_RMmoist is 2 or 3**.
+
 Following that there is a table which records monthly data on **year**, **month**, **percentage of modern carbon**  (%), **mean air temperature** (Tmp, °C), **total monthly rainfall** (Rain, mm), **total monthly open-pan evaporation** (Evap, mm), **all carbon input entering the soil** (from plants, roots, root exudates) (C_inp, t C ha<sup>-1</sup>), **carbon input from farmyard manure** (FYM, t C ha<sup>-1</sup>), **plant cover** (PC, 0 for no plants e.g. bare or post-harvest, 1 for plants e.g. crop or grass), and the **DPM/RPM ratio** (DPM_RPM) of the carbon inputs from plants.
 
 ### year_results.out
@@ -48,34 +54,37 @@ This file contains the yearly values of the SOC (both the pools and Total) and t
 
 The pools are:  
 **Year**  
-**Month** 	- Always December for the yearly output  
-**DPM** 	- Decomposable plant material (t C ha<sup>-1</sup>)  
-**RPM** 	- Resistant plant material (t C ha<sup>-1</sup>)  
-**BIO** 	- Microbial biomass (t C ha<sup>-1</sup>)  
-**HUM**	- Humified organic matter (t C ha<sup>-1</sup>)  
-**IOM** 	- Inert organic matter (t C ha<sup>-1</sup>)  
-**SOC**	- Total soil organic carbon (t C ha<sup>-1</sup>)  
-**deltaC** 	- delta <sup>14</sup>C (‰)  
+**Month** 	    - Always December for the yearly output  
+**DPM_t_C_ha** 	- Decomposable plant material (t C ha<sup>-1</sup>)  
+**RPM_t_C_ha** 	- Resistant plant material (t C ha<sup>-1</sup>)  
+**BIO_t_C_ha** 	- Microbial biomass (t C ha<sup>-1</sup>)  
+**HUM_t_C_ha**	- Humified organic matter (t C ha<sup>-1</sup>)  
+**IOM_t_C_ha** 	- Inert organic matter (t C ha<sup>-1</sup>)  
+**SOC_t_C_ha**	- Total soil organic carbon (t C ha<sup>-1</sup>)  
+**CO2_t_C_ha**	- Accumulated carbon dioxide (t C ha<sup>-1</sup>)  
+**deltaC** 	    - delta <sup>14</sup>C (‰)  
 
 
 The total organic carbon (soil organic carbon) is equal to the sum of the 5 pools. 
 
-TOC or SOC = DRM + RPM + BIO + HUM + IOM 
+TOC or SOC = DPM + RPM + BIO + HUM + IOM 
+
+The included file was generated using opt_RMmoist = 1 and opt_SMDbare = 1
      
 ### month_results.out
 This file contains the monthly inputs, rate modifying factors, SOC pools.
 
 **Year**  
 **Month**  
-**C_Inp_t_C_ha**		- C input (t C ha<sup>-1</sup>)  
+**C_Inp_t_C_ha**	- C input (t C ha<sup>-1</sup>)  
 **FYM_Inp_t_C_ha**	- Farmyard manure (t C ha<sup>-1</sup>)  
-**TEMP_C**		- Air temperature (C)  
-**RM_TMP**		- Rate modifying factor for temperature (-)  
-**RAIN_mm**		- Rainfall (mm)  
+**TEMP_C**		    - Air temperature (C)  
+**RM_TMP**		    - Rate modifying factor for temperature (-)  
+**RAIN_mm**		    - Rainfall (mm)  
 **PEVAP_mm**		- Open pan evaporation (mm)  
-**SWC_mm**		- Accumulated soil water deficit (mm)  
+**SWC_mm**		    - Accumulated soil water deficit (mm)  
 **RM_Moist**		- Rate modifying factor for soil moisture (-)  
-**PC**			- Soil plant cover (0 bare or 1 covered)  
+**PC**			    - Soil plant cover (0 bare or 1 covered)  
 **RM_PC**			- rate modifying factor for crop cover  
 **DPM_t_C_ha**		- Decomposable plant material (t C ha<sup>-1</sup>)  
 **RPM_t_C_ha**		- Resistant plant material (t C ha<sup>-1</sup>)  
@@ -83,6 +92,9 @@ This file contains the monthly inputs, rate modifying factors, SOC pools.
 **HUM_t_C_ha**		- Humified organic matter (t C ha<sup>-1</sup>)  
 **IOM_t_C_ha**		- Inert organic matter (t C ha<sup>-1</sup>)  
 **SOC_t_C_ha**		- Total soil organic carbon (t C ha<sup>-1</sup>)  
+**CO2_t_C_ha**		- Accumulated carbon dioxide (t C ha<sup>-1</sup>)  
+
+The included file was generated using opt_RMmoist = 1 and opt_SMDbare = 1
 
 ## Requirements
 The code does not require any particular of version of Fortran, so can be compiled in both windows and Linux.
