@@ -1,5 +1,5 @@
 example input data to run the Farina verion of RothC for a number of years
-clay and depth are only needed once, other data are monthly jan-dec 
+soil variables and nsteps (line 8) are only needed once, other data are monthly jan-dec 
    (-)       (-)
  opt_RMmoist  opt_SMDbare
     1          1
