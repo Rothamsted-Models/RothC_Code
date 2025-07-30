@@ -1,14 +1,15 @@
 C******************************************************************************
 C  RothC model
 C
-C  February 2024
+C  July 2025
 C
 C  
 C  Kevin Coleman
+C  Jonah Prout
 C
 C  This is the code for RothC 
 C
-C  June 2025 this is a branch for the Farina (2013) version of the model
+C
 C
 C INPUTS: 
 C
