@@ -1,13 +1,10 @@
 C******************************************************************************
 C  Wrapper for RothC model 
 C
-C  February 2024
+C  July 2025
 C
-C  June 2025 this is the code that includes the Farina et al (2013) version of the model 
-C
-C  Farina et al, 2013, Geoderma. 200, 18-30, 10.1016/j.geoderma.2013.01.021
-C  
 C  Kevin Coleman
+C  Jonah Prout
 C
 C******************************************************************************   
 C
@@ -44,6 +41,12 @@ C C_inp:    Carbon input to the soil each month (units: t C /ha)
 C FYM:      Farmyard manure input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
 C DPM/RPM:  Ratio of DPM to RPM for carbon additions to the soil (units: none)
+C PL_DPM_f: Fraction of plant carbon to DPM
+C PL_DPM_f: Fraction of plant carbon to RPM
+C OA_DPM_f: Fraction of organic amendment carbon to DPM
+C OA_DPM_f: Fraction of organic amendment carbon to DPM
+C OA_DPM_f: Fraction of organic amendment carbon to DPM
+C OA_DPM_f: Fraction of organic amendment carbon to DPM
 
 C  Note:
 C  The shell reads in an example data set from RothC_input.dat, if your data is in another format you can change the read statements.
@@ -84,9 +87,21 @@ C
       
       real*8 t_FYM_Inp(MAXsteps)
       
-      real*8 t_DPM_RPM(MAXsteps)
+      real*8 t_DPM_RPM(MAXsteps) ! to be deleted
       
-      real*8 t_fert_N(MAXsteps)
+      real*8 t_PL_DPM_f(MAXsteps) ! fraction of plant C to DPM
+      
+      real*8 t_PL_RPM_f(MAXsteps) ! fraction of plant C to RPM
+      
+      real*8 t_OA_DPM_f(MAXsteps) ! fraction of org amd C to DPM
+      
+      real*8 t_OA_RPM_f(MAXsteps) ! fraction of org amd C to RPM
+      
+      real*8 t_OA_BIO_f(MAXsteps) ! fraction of org amd C to BIO
+      
+      real*8 t_OA_HUM_f(MAXsteps) ! fraction of org amd C to HUM
+      
+      real*8 t_fert_N(MAXsteps) ! to be deleted (not used)
       
       real*8 clay  ! clay content (Units: %)
       
@@ -127,6 +142,9 @@ C
       ! C_inp (Carbon input to the soil each month units: t C /ha)
       
       real*8 C_inp, FYM_Inp, DPM_RPM  
+      
+      ! pool_f are the decimal fractions of plant and amendment C
+      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f
       
       real*8 SMD      
       
@@ -180,7 +198,9 @@ C read in RothC input data file: data will be passed from other programs at some
 
 	do i = 1, nsteps
 	  read(11,*)t_year(i), t_month(i), t_mod(i), t_tmp(i),t_rain(i),
-     &      t_evap(i), t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i)
+     &      t_evap(i), t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i),
+     &      t_PL_DPM_f(i), t_PL_RPM_f(i), t_OA_DPM_f(i), t_OA_RPM_f(i),
+     &      t_OA_BIO_f(i), t_OA_HUM_f(i)
       enddo
       
       close(11)   
@@ -249,6 +269,14 @@ C
          
          PC = t_PC(k)
          DPM_RPM = t_DPM_RPM(k)
+         PL_DPM_f = t_PL_DPM_f(k)
+         PL_RPM_f = t_PL_RPM_f(k)
+         
+         OA_DPM_f = t_OA_DPM_f(k)
+         OA_RPM_f = t_OA_RPM_f(k)
+         OA_BIO_f = t_OA_BIO_f(k)
+         OA_HUM_f = t_OA_HUM_f(k)
+         
          
          C_inp = t_C_Inp(k)
          FYM_Inp = t_FYM_Inp(k)
@@ -258,6 +286,7 @@ C
          call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
+     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f,
      &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
         
@@ -307,6 +336,13 @@ C
          
          PC = t_PC(i)
          DPM_RPM = t_DPM_RPM(i)
+         PL_DPM_f = t_PL_DPM_f(i)
+         PL_RPM_f = t_PL_RPM_f(i)
+         
+         OA_DPM_f = t_OA_DPM_f(i)
+         OA_RPM_f = t_OA_RPM_f(i)
+         OA_BIO_f = t_OA_BIO_f(i)
+         OA_HUM_f = t_OA_HUM_f(i)
          
          C_inp = t_C_Inp(i)
          FYM_Inp = t_FYM_Inp(i)
@@ -316,6 +352,7 @@ C
          call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
+     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f,
      &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)    
          
