@@ -41,7 +41,7 @@ C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
 C Evap:     open pan evaporation (mm)
 C C_inp:    Carbon input to the soil each month (units: t C /ha)
-C FYM:      Farmyard manure input to the soil each month (units: t C /ha)
+C OA:      Farmyard manure input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
 C DPM/RPM:  Ratio of DPM to RPM for carbon additions to the soil (units: none)
 C PL_DPM_f: Fraction of plant carbon to DPM
@@ -66,7 +66,7 @@ C  SOC:   Soil Organic Matter / Total organic Matter (units: t C / ha)
 C  DPM_Rage:   radiocarbon age of DPM
 C  RPM_Rage:   radiocarbon age of RPM
 C  Bio_Rage:   radiocarbon age of Bio
-C  HUM_Rage:   radiocarbon age of Hum
+C  Hum_Rage:   radiocarbon age of Hum
 C  Total_Rage: radiocarbon age of SOC (/ TOC)
 C
 C  SMD:       soil moisture deficit (mm per soil depth)  SMD
@@ -76,11 +76,11 @@ C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
 C
 C******************************************************************************      
          
-      Subroutine RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
-     &    DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
+      Subroutine RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
+     &    DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
-     &    PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f,
-     &    C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &    PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &    C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &    opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)
       
       implicit none
@@ -96,9 +96,9 @@ C******************************************************************************
       integer opt_SMDbare !  1: Standard RothC bareSMD, 
                           !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
 
-      real*8 DPM,RPM,BIO,HUM,IOM,SOC, total_CO2
+      real*8 DPM,RPM,Bio,Hum,IOM,SOC, total_CO2
       
-      real*8 DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage
+      real*8 DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage
       
       real*8 modernC
       
@@ -115,11 +115,11 @@ C******************************************************************************
       real*8 DPM_RPM
       
       ! pool_f are the decimal fractions of plant and amendment C
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f
+      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
       real*8 TEMP, RAIN, PEVAP
       
-      real*8 C_Inp, FYM_Inp
+      real*8 C_Inp, OA_Inp
       
       real*8 SMD
        
@@ -141,10 +141,10 @@ C combine RMF's into one.
       
 
       
-      call decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, total_CO2,   
-     &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC,
-     &     RateM, clay, C_Inp, FYM_Inp, DPM_RPM,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f)
+      call decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
+     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
+     &     RateM, clay, C_Inp, OA_Inp, DPM_RPM,
+     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
      
      
       return
@@ -296,10 +296,10 @@ C**********************************************************************
 C      calculates the decomposition and radiocarbon 
 C**********************************************************************     
 C
-      Subroutine decomp(timeFact, DPM,RPM,BIO,HUM, IOM, SOC, total_CO2,
-     &       DPM_Rage,RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, modernC,
-     &       RateM, clay, C_Inp, FYM_Inp, DPM_RPM,
-     &       PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f)
+      Subroutine decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
+     &       DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
+     &       RateM, clay, C_Inp, OA_Inp, DPM_RPM,
+     &       PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
 C
       implicit none
       
@@ -316,25 +316,25 @@ C rate constant are params so don't need to be passed
       
       real*8 tstep, exc
       
-      real*8 DPM,RPM,BIO,HUM,IOM, SOC, total_CO2
+      real*8 DPM,RPM,Bio,Hum,IOM, SOC, total_CO2
       
       real*8 modernC
       
       real*8 RateM
       real*8 Clay
       
-      real*8 C_Inp, FYM_Inp, DPM_RPM
+      real*8 C_Inp, OA_Inp, DPM_RPM
       
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f
+      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
       real*8 PI_C_DPM, PI_C_RPM   
-      real*8 FYM_C_DPM, FYM_C_RPM, FYM_C_Bio, FYM_C_Hum
+      real*8 OA_C_DPM, OA_C_RPM, OA_C_Bio, OA_C_Hum
 
 C C that remains in each pool       
-      real*8 DPM1,RPM1,BIO1,HUM1 
+      real*8 DPM1,RPM1,Bio1,Hum1 
            
 C C amount that will become CO2, Bio and Hum (_d = delta change)
-      real*8 DPM_d,RPM_d,BIO_d,HUM_d      
+      real*8 DPM_d,RPM_d,Bio_d,Hum_d      
       
 c _co2: amount of pool that becomes CO2 
       real*8 DPM_co2, RPM_co2, Bio_co2, Hum_co2
@@ -345,13 +345,13 @@ c _bio: amount of pool that becomes bio
 c _hum amount of pool that becomes hum 
       real*8 DPM_hum, RPM_hum, Bio_hum, Hum_hum 
       
-      real*8 DPM_Rage,RPM_Rage,Bio_Rage,HUM_Rage,IOM_Rage,Total_Rage
+      real*8 DPM_Rage,RPM_Rage,Bio_Rage,Hum_Rage,IOM_Rage,Total_Rage
       
       real*8 DPM_Ract,RPM_Ract,Bio_Ract,Hum_Ract,IOM_Ract,Total_Ract
       
       real*8 PI_DPM_Ract, PI_RPM_Ract
       
-      real*8 FYM_DPM_Ract, FYM_RPM_Ract, FYM_Bio_Ract, FYM_Hum_Ract
+      real*8 OA_DPM_Ract, OA_RPM_Ract, OA_Bio_Ract, OA_Hum_Ract
       
       real*8 DPM_Ract_new, RPM_Ract_new, Bio_Ract_new, Hum_Ract_new
       
@@ -416,21 +416,21 @@ C split plant C to DPM and RPM
       PI_C_DPM = PL_DPM_f * C_Inp
       PI_C_RPM = PL_RPM_f * C_Inp
 
-C split FYM C to DPM, RPM and Hum 
-  !    FYM_C_DPM = 0.49*FYM_Inp
-  !    FYM_C_RPM = 0.49*FYM_Inp      
-  !    FYM_C_Hum = 0.02*FYM_Inp   
+C split OA C to DPM, RPM and Hum 
+  !    OA_C_DPM = 0.49*OA_Inp
+  !    OA_C_RPM = 0.49*OA_Inp      
+  !    OA_C_Hum = 0.02*OA_Inp   
        
-       FYM_C_DPM = OA_DPM_f * FYM_Inp
-       FYM_C_RPM = OA_RPM_f * FYM_Inp
-       FYM_C_Bio = OA_BIO_f * FYM_Inp
-       FYM_C_Hum = OA_HUM_f * FYM_Inp
+      OA_C_DPM = OA_DPM_f * OA_Inp
+      OA_C_RPM = OA_RPM_f * OA_Inp
+      OA_C_Bio = OA_Bio_f * OA_Inp
+      OA_C_Hum = OA_Hum_f * OA_Inp
 
-C add Plant C and FYM_C to DPM, RPM and Hum   
-      DPM = DPM + PI_C_DPM + FYM_C_DPM
-      RPM = RPM + PI_C_RPM + FYM_C_RPM  
-      BIO = BIO + FYM_C_Bio
-      Hum = Hum + FYM_C_Hum
+C add Plant C and OA_C to DPM, RPM and Hum   
+      DPM = DPM + PI_C_DPM + OA_C_DPM
+      RPM = RPM + PI_C_RPM + OA_C_RPM  
+      Bio = Bio + OA_C_Bio
+      Hum = Hum + OA_C_Hum
       
 C calc new ract of each pool      
       DPM_Ract = DPM1 *exp(-conr*DPM_Rage)
@@ -450,30 +450,30 @@ C calc new ract of each pool
       
       IOM_Ract = IOM *exp(-conr*IOM_Rage) 
       
-C assign new C from plant and FYM the correct age   
+C assign new C from plant and OA the correct age   
       PI_DPM_Ract = modernC * PI_C_DPM
       PI_RPM_Ract = modernC * PI_C_RPM
       
-      FYM_DPM_Ract = modernC * FYM_C_DPM
-      FYM_RPM_Ract = modernC * FYM_C_RPM
-      FYM_Bio_Ract = modernC * FYM_C_Bio
-      FYM_Hum_Ract = modernC * FYM_C_Hum          
+      OA_DPM_Ract = modernC * OA_C_DPM
+      OA_RPM_Ract = modernC * OA_C_RPM
+      OA_Bio_Ract = modernC * OA_C_Bio
+      OA_Hum_Ract = modernC * OA_C_Hum          
       
 C update ract for each pool        
-      DPM_Ract_new = FYM_DPM_Ract + PI_DPM_Ract + DPM_Ract*exc
-      RPM_Ract_new = FYM_RPM_Ract + PI_RPM_Ract + RPM_Ract*exc    
+      DPM_Ract_new = OA_DPM_Ract + PI_DPM_Ract + DPM_Ract*exc
+      RPM_Ract_new = OA_RPM_Ract + PI_RPM_Ract + RPM_Ract*exc    
       
-      Bio_Ract_new = FYM_Bio_Ract + (Bio_Ract + DPM_Bio_Ract + 
+      Bio_Ract_new = OA_Bio_Ract + (Bio_Ract + DPM_Bio_Ract + 
      &               RPM_Bio_Ract + Bio_Bio_Ract + Hum_Bio_Ract )*exc
       
-      Hum_Ract_new = FYM_Hum_Ract + (Hum_Ract + DPM_Hum_Ract +
+      Hum_Ract_new = OA_Hum_Ract + (Hum_Ract + DPM_Hum_Ract +
      &               RPM_Hum_Ract + Bio_Hum_Ract + Hum_Hum_Ract )*exc  
       
       
       SOC = DPM + RPM + Bio + Hum + IOM      
       
       Total_Ract = DPM_RACT_new + RPM_Ract_new +
-     &           Bio_Ract_new + HUM_Ract_new + IOM_Ract
+     &           Bio_Ract_new + Hum_Ract_new + IOM_Ract
       
 
 C calculate rage of each pool.      

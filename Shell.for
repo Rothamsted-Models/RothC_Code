@@ -38,20 +38,20 @@ C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
 C Evap:     open pan evaporation (mm)
 C C_inp:    Carbon input to the soil each month (units: t C /ha)
-C FYM:      Farmyard manure input to the soil each month (units: t C /ha)
+C OA:       Organic amendment input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
 C DPM/RPM:  Ratio of DPM to RPM for carbon additions to the soil (units: none)
 C PL_DPM_f: Fraction of plant carbon to DPM
 C PL_DPM_f: Fraction of plant carbon to RPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
-C OA_DPM_f: Fraction of organic amendment carbon to DPM
-C OA_DPM_f: Fraction of organic amendment carbon to DPM
-C OA_DPM_f: Fraction of organic amendment carbon to DPM
+C OA_RPM_f: Fraction of organic amendment carbon to RPM
+C OA_Bio_f: Fraction of organic amendment carbon to Bio
+C OA_Hum_f: Fraction of organic amendment carbon to Hum
 
 C  Note:
 C  The shell reads in an example data set from RothC_input.dat, if your data is in another format you can change the read statements.
 C
-C  This model uses the first 12 months of weather (temp, rain, and evap), and land management information (C input, FYM input, and plant cover) to run to equilibrium    
+C  This model uses the first 12 months of weather (temp, rain, and evap), and land management information (C input, OA input, and plant cover) to run to equilibrium    
 C
       program RothC_shell
       
@@ -85,7 +85,7 @@ C
       
       real*8 t_C_Inp(MAXsteps)
       
-      real*8 t_FYM_Inp(MAXsteps)
+      real*8 t_OA_Inp(MAXsteps)
       
       real*8 t_DPM_RPM(MAXsteps) ! to be deleted
       
@@ -97,11 +97,10 @@ C
       
       real*8 t_OA_RPM_f(MAXsteps) ! fraction of org amd C to RPM
       
-      real*8 t_OA_BIO_f(MAXsteps) ! fraction of org amd C to BIO
+      real*8 t_OA_Bio_f(MAXsteps) ! fraction of org amd C to Bio
       
-      real*8 t_OA_HUM_f(MAXsteps) ! fraction of org amd C to HUM
+      real*8 t_OA_Hum_f(MAXsteps) ! fraction of org amd C to Hum
       
-      real*8 t_fert_N(MAXsteps) ! to be deleted (not used)
       
       real*8 clay  ! clay content (Units: %)
       
@@ -116,9 +115,9 @@ C
       real*8 minRM_Moist ! (units: -, default=0.2) needed for the farina (2013) version
       
       
-      real*8 DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
+      real*8 DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
       
-      real*8 DPM_Rage,RPM_Rage,BIO_Rage,HUM_Rage,IOM_Rage,Total_Rage
+      real*8 DPM_Rage,RPM_Rage,Bio_Rage,Hum_Rage,IOM_Rage,Total_Rage
       
       
       real*8 DPM_Delta, RPM_Delta, Bio_Delta, Hum_Delta, IOM_Delta
@@ -141,10 +140,10 @@ C
       
       ! C_inp (Carbon input to the soil each month units: t C /ha)
       
-      real*8 C_inp, FYM_Inp, DPM_RPM  
+      real*8 C_inp, OA_Inp, DPM_RPM  
       
       ! pool_f are the decimal fractions of plant and amendment C
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f
+      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
       real*8 SMD      
       
@@ -160,15 +159,15 @@ C
       
       DPM = 0.0
       RPM = 0.0
-      BIO = 0.0
-      HUM = 0.0
+      Bio = 0.0
+      Hum = 0.0
       IOM = 0.0
       
       total_CO2 = 0.0
       
       DPM_Rage = 0.0
       RPM_Rage = 0.0
-      BIO_Rage = 0.0
+      Bio_Rage = 0.0
       Hum_Rage = 0.0
       IOM_Rage = 50000.0  
 
@@ -198,9 +197,9 @@ C read in RothC input data file: data will be passed from other programs at some
 
 	do i = 1, nsteps
 	  read(11,*)t_year(i), t_month(i), t_mod(i), t_tmp(i),t_rain(i),
-     &      t_evap(i), t_C_Inp(i), t_FYM_Inp(i), t_PC(i), t_DPM_RPM(i),
+     &      t_evap(i), t_C_Inp(i), t_OA_Inp(i), t_PC(i), t_DPM_RPM(i),
      &      t_PL_DPM_f(i), t_PL_RPM_f(i), t_OA_DPM_f(i), t_OA_RPM_f(i),
-     &      t_OA_BIO_f(i), t_OA_HUM_f(i)
+     &      t_OA_Bio_f(i), t_OA_Hum_f(i)
       enddo
       
       close(11)   
@@ -225,7 +224,7 @@ C
         write(71,7100)
 7100  format(5x, 'Year,', 2x,  'Month,', 
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
-     &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
+     &  1x, 'Bio_t_C_ha,', 1x, 'Hum_t_C_ha,',
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha,', 1x, ' deltaC')     
              
@@ -238,17 +237,17 @@ C
       
        write(91,9100)
 9100  format(4x, 'Year,',1x,  'Month,',1x, 'C_Inp_t_C_ha,', 
-     &  1x,  'FYM_Inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
+     &  1x,  'OA_Inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
      &  1x, 'RAIN_mm,', 1x, 'PEVAP_mm,',1x, 'SMD_mm,',
      &  1x,'RM_Moist,', 1x, 'PC,', 1x,  'RM_PC,',  
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
-     &  1x, 'BIO_t_C_ha,', 1x, 'HUM_t_C_ha,',
+     &  1x, 'Bio_t_C_ha,', 1x, 'Hum_t_C_ha,',
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha') 
      
       YEAR = t_year(1)
       
-      write(91,9101) Year, j, DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
+      write(91,9101) Year, j, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
      
 9101     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
      &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
@@ -274,20 +273,20 @@ C
          
          OA_DPM_f = t_OA_DPM_f(k)
          OA_RPM_f = t_OA_RPM_f(k)
-         OA_BIO_f = t_OA_BIO_f(k)
-         OA_HUM_f = t_OA_HUM_f(k)
+         OA_Bio_f = t_OA_Bio_f(k)
+         OA_Hum_f = t_OA_Hum_f(k)
          
          
          C_inp = t_C_Inp(k)
-         FYM_Inp = t_FYM_Inp(k)
+         OA_Inp = t_OA_Inp(k)
          
          modernC = t_mod(k) / 100.0             
          
-         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
-     &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
+         call RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
+     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f,
-     &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
         
          if(mod(k, timeFact)== 0)then 
@@ -300,7 +299,7 @@ C
       
       total_CO2 = 0.0 ! reset CO2 to zero after the equilibrium run
       
-      write(91,9102) Year, j-1, DPM, RPM, BIO, HUM, IOM, SOC, total_CO2
+      write(91,9102) Year, j-1, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
      
 9102     format(1x, i7, ',', i6, ',', 13x ',', 15x, ',', 7x, ',',
      &         7x, ',', 8x, ',', 9x, ',', 7x, ',', 9x, ',',
@@ -341,27 +340,27 @@ C
          
          OA_DPM_f = t_OA_DPM_f(i)
          OA_RPM_f = t_OA_RPM_f(i)
-         OA_BIO_f = t_OA_BIO_f(i)
-         OA_HUM_f = t_OA_HUM_f(i)
+         OA_Bio_f = t_OA_Bio_f(i)
+         OA_Hum_f = t_OA_Hum_f(i)
          
          C_inp = t_C_Inp(i)
-         FYM_Inp = t_FYM_Inp(i)
+         OA_Inp = t_OA_Inp(i)
          
          modernC = t_mod(i) / 100.0
            
-         call RothC(timeFact, DPM,RPM,BIO,HUM,IOM, SOC, total_CO2, 
-     &     DPM_Rage, RPM_Rage, Bio_Rage, HUM_Rage, Total_Rage, 
+         call RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
+     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_BIO_f, OA_HUM_f,
-     &     C_Inp, FYM_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)    
          
          Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0
          
          
-         write(91,9103) Year, k_month, C_Inp, FYM_Inp, TEMP,RM_TMP, 
+         write(91,9103) Year, k_month, C_Inp, OA_Inp, TEMP,RM_TMP, 
      &        RAIN, PEVAP, SMD, RM_Moist, PC, RM_PC,
-     &        DPM,RPM,BIO,HUM, IOM, SOC, total_CO2
+     &        DPM,RPM,Bio,Hum, IOM, SOC, total_CO2
      
 9103     format(1x, i7, ',', i6, ',', f13.3, ',',f15.3, ',',f7.1, ',',
      &         f7.4, ',',f8.1, ',',f9.1, ',',f7.2, ',', f9.4, ',',
