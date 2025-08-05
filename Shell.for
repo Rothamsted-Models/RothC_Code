@@ -1,7 +1,7 @@
 C******************************************************************************
 C  Wrapper for RothC model 
 C
-C  July 2025
+C  August 2025
 C
 C  Kevin Coleman
 C  Jonah Prout
@@ -40,7 +40,6 @@ C Evap:     open pan evaporation (mm)
 C C_inp:    Carbon input to the soil each month (units: t C /ha)
 C OA:       Organic amendment input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
-C DPM/RPM:  Ratio of DPM to RPM for carbon additions to the soil (units: none)
 C PL_DPM_f: Fraction of plant carbon to DPM
 C PL_DPM_f: Fraction of plant carbon to RPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
@@ -86,8 +85,6 @@ C
       real*8 t_C_Inp(MAXsteps)
       
       real*8 t_OA_Inp(MAXsteps)
-      
-      real*8 t_DPM_RPM(MAXsteps) ! to be deleted
       
       real*8 t_PL_DPM_f(MAXsteps) ! fraction of plant C to DPM
       
@@ -140,7 +137,7 @@ C
       
       ! C_inp (Carbon input to the soil each month units: t C /ha)
       
-      real*8 C_inp, OA_Inp, DPM_RPM  
+      real*8 C_inp, OA_Inp
       
       ! pool_f are the decimal fractions of plant and amendment C
       real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
@@ -197,7 +194,7 @@ C read in RothC input data file: data will be passed from other programs at some
 
 	do i = 1, nsteps
 	  read(11,*)t_year(i), t_month(i), t_mod(i), t_tmp(i),t_rain(i),
-     &      t_evap(i), t_C_Inp(i), t_OA_Inp(i), t_PC(i), t_DPM_RPM(i),
+     &      t_evap(i), t_C_Inp(i), t_OA_Inp(i), t_PC(i),
      &      t_PL_DPM_f(i), t_PL_RPM_f(i), t_OA_DPM_f(i), t_OA_RPM_f(i),
      &      t_OA_Bio_f(i), t_OA_Hum_f(i)
       enddo
@@ -267,7 +264,6 @@ C
          PEVAP = t_evap(k)
          
          PC = t_PC(k)
-         DPM_RPM = t_DPM_RPM(k)
          PL_DPM_f = t_PL_DPM_f(k)
          PL_RPM_f = t_PL_RPM_f(k)
          
@@ -284,7 +280,7 @@ C
          
          call RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
+     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
@@ -334,7 +330,6 @@ C
          PEVAP = t_evap(i)
          
          PC = t_PC(i)
-         DPM_RPM = t_DPM_RPM(i)
          PL_DPM_f = t_PL_DPM_f(i)
          PL_RPM_f = t_PL_RPM_f(i)
          
@@ -350,7 +345,7 @@ C
            
          call RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
+     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)    

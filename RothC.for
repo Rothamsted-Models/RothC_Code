@@ -1,7 +1,7 @@
 C******************************************************************************
 C  RothC model
 C
-C  July 2025
+C  August 2025
 C
 C  
 C  Kevin Coleman
@@ -43,7 +43,6 @@ C Evap:     open pan evaporation (mm)
 C C_inp:    Carbon input to the soil each month (units: t C /ha)
 C OA:      Farmyard manure input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
-C DPM/RPM:  Ratio of DPM to RPM for carbon additions to the soil (units: none)
 C PL_DPM_f: Fraction of plant carbon to DPM
 C PL_DPM_f: Fraction of plant carbon to RPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
@@ -78,7 +77,7 @@ C******************************************************************************
          
       Subroutine RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &    DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,DPM_RPM,
+     &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &    PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &    C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &    opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)
@@ -112,8 +111,6 @@ C******************************************************************************
       
       real*8 minRM_Moist  ! (units: -, default=0.2) needed for the farina (2013) version
       
-      real*8 DPM_RPM
-      
       ! pool_f are the decimal fractions of plant and amendment C
       real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
@@ -143,7 +140,7 @@ C combine RMF's into one.
       
       call decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &     RateM, clay, C_Inp, OA_Inp, DPM_RPM,
+     &     RateM, clay, C_Inp, OA_Inp,
      &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
      
      
@@ -298,7 +295,7 @@ C**********************************************************************
 C
       Subroutine decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
      &       DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &       RateM, clay, C_Inp, OA_Inp, DPM_RPM,
+     &       RateM, clay, C_Inp, OA_Inp,
      &       PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
 C
       implicit none
@@ -323,7 +320,7 @@ C rate constant are params so don't need to be passed
       real*8 RateM
       real*8 Clay
       
-      real*8 C_Inp, OA_Inp, DPM_RPM
+      real*8 C_Inp, OA_Inp
       
       real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
@@ -410,17 +407,10 @@ C update C pools
       total_CO2 = total_CO2 + DPM_co2 + RPM_co2 + Bio_co2 + Hum_co2
       
 C split plant C to DPM and RPM 
-  !    PI_C_DPM = DPM_RPM / (DPM_RPM + 1.0) * C_Inp
-  !    PI_C_RPM =     1.0 / (DPM_RPM + 1.0) * C_Inp
-      
       PI_C_DPM = PL_DPM_f * C_Inp
       PI_C_RPM = PL_RPM_f * C_Inp
 
 C split OA C to DPM, RPM and Hum 
-  !    OA_C_DPM = 0.49*OA_Inp
-  !    OA_C_RPM = 0.49*OA_Inp      
-  !    OA_C_Hum = 0.02*OA_Inp   
-       
       OA_C_DPM = OA_DPM_f * OA_Inp
       OA_C_RPM = OA_RPM_f * OA_Inp
       OA_C_Bio = OA_Bio_f * OA_Inp
