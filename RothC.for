@@ -389,30 +389,30 @@ C C decomposition
 C proportion C from each pool into CO2, Bio and Hum      
       DPM_co2 = DPM_d * (x / (x+1))
       DPM_bio = DPM_d * (0.46 / (x+1))
-      DPM_hum = DPM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
-      DPM_iom = DPM_d * (0.0 / (x+1))    !
+      DPM_hum = DPM_d * (0.27 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      DPM_iom = DPM_d * (0.27 / (x+1))    !
       
       RPM_co2 = RPM_d * (x / (x+1))
       RPM_bio = RPM_d * (0.46 / (x+1))
-      RPM_hum = RPM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
-      RPM_iom = RPM_d * (0.0 / (x+1))    !   
+      RPM_hum = RPM_d * (0.27 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      RPM_iom = RPM_d * (0.27 / (x+1))    !   
       
       Bio_co2 = Bio_d * (x / (x+1))
       Bio_bio = Bio_d* (0.46 / (x+1))
-      Bio_hum = Bio_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
-      Bio_iom = Bio_d * (0.0 / (x+1))
+      Bio_hum = Bio_d * (0.27 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      Bio_iom = Bio_d * (0.27 / (x+1))
       
       
       Hum_co2 = Hum_d * (x / (x+1))
       Hum_bio = Hum_d * (0.46 / (x+1))
-      Hum_hum = Hum_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
-      Hum_iom = Hum_d * (0.0 / (x+1))    !     
+      Hum_hum = Hum_d * (0.27 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      Hum_iom = Hum_d * (0.27 / (x+1))    !     
 
             
       IOM_co2 = IOM_d * (x / (x+1))
       IOM_bio = IOM_d * (0.46 / (x+1))
-      IOM_hum = IOM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
-      IOM_iom = IOM_d * (0.0 / (x+1))    !     
+      IOM_hum = IOM_d * (0.27 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      IOM_iom = IOM_d * (0.27 / (x+1))    !     
       
 C update C pools  
       DPM = DPM1
