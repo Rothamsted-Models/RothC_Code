@@ -1,7 +1,7 @@
 C******************************************************************************
 C  RothC model
 C
-C  August 2025
+C  September 2025 (branch for the Saturation carbon project)
 C
 C  
 C  Kevin Coleman
@@ -305,6 +305,7 @@ C rate constant are params so don't need to be passed
 !      real*8, parameter :: tstep = 1/12.0
       real*8, parameter :: DPM_k = 10.0,  RPM_k = 0.3
       real*8, parameter :: Bio_k = 0.66,  Hum_k = 0.02 
+      real*8, parameter :: IOM_k = 0.02           ! Rate constant for IOM
     
       real*8, parameter ::  conr = log(2.0) / 5568.0
 !     real*8, parameter ::  exc = exp(-conr*tstep) 
@@ -328,32 +329,35 @@ C rate constant are params so don't need to be passed
       real*8 OA_C_DPM, OA_C_RPM, OA_C_Bio, OA_C_Hum
 
 C C that remains in each pool       
-      real*8 DPM1,RPM1,Bio1,Hum1 
+      real*8 DPM1,RPM1,Bio1,Hum1, IOM1   ! added IOM
            
 C C amount that will become CO2, Bio and Hum (_d = delta change)
-      real*8 DPM_d,RPM_d,Bio_d,Hum_d      
+      real*8 DPM_d,RPM_d,Bio_d,Hum_d, IOM_d   ! added IOM     
       
 c _co2: amount of pool that becomes CO2 
-      real*8 DPM_co2, RPM_co2, Bio_co2, Hum_co2
+      real*8 DPM_co2, RPM_co2, Bio_co2, Hum_co2, IOM_co2  ! added co2 from IOM
       
 c _bio: amount of pool that becomes bio 
-      real*8 DPM_bio, RPM_bio, Bio_bio, Hum_bio
+      real*8 DPM_bio, RPM_bio, Bio_bio, Hum_bio, IOM_bio  ! added IOM that becomes Bio
       
 c _hum amount of pool that becomes hum 
-      real*8 DPM_hum, RPM_hum, Bio_hum, Hum_hum 
+      real*8 DPM_hum, RPM_hum, Bio_hum, Hum_hum, IOM_hum  ! added IOM that becomes Hum
       
-      real*8 DPM_Rage,RPM_Rage,Bio_Rage,Hum_Rage,IOM_Rage,Total_Rage
+c _iom amount of pool that becomes hum 
+      real*8 DPM_iom, RPM_iom, Bio_iom, Hum_iom, IOM_iom  ! added DPM that becomes iom, RPM that becomes iom, Bio that becomes iom, Hum that becomes iom, IOM that becomes iom 
       
-      real*8 DPM_Ract,RPM_Ract,Bio_Ract,Hum_Ract,IOM_Ract,Total_Ract
+      real*8 DPM_Rage,RPM_Rage,Bio_Rage,Hum_Rage,IOM_Rage,Total_Rage  ! need to think about IOM
+      
+      real*8 DPM_Ract,RPM_Ract,Bio_Ract,Hum_Ract,IOM_Ract,Total_Ract  ! need to think about IOM
       
       real*8 PI_DPM_Ract, PI_RPM_Ract
       
-      real*8 OA_DPM_Ract, OA_RPM_Ract, OA_Bio_Ract, OA_Hum_Ract
+      real*8 OA_DPM_Ract, OA_RPM_Ract, OA_Bio_Ract, OA_Hum_Ract   ! need to think about IOM
       
-      real*8 DPM_Ract_new, RPM_Ract_new, Bio_Ract_new, Hum_Ract_new
+      real*8 DPM_Ract_new, RPM_Ract_new, Bio_Ract_new, Hum_Ract_new   ! need to think about IOM
       
-      real*8 DPM_Bio_Ract, RPM_Bio_Ract, Bio_Bio_Ract, Hum_Bio_Ract 
-      real*8 DPM_Hum_Ract, RPM_Hum_Ract, Bio_Hum_Ract, Hum_Hum_Ract
+      real*8 DPM_Bio_Ract, RPM_Bio_Ract, Bio_Bio_Ract, Hum_Bio_Ract   ! need to think about IOM
+      real*8 DPM_Hum_Ract, RPM_Hum_Ract, Bio_Hum_Ract, Hum_Hum_Ract   ! need to think about IOM
  
       real*8 X
  
@@ -361,7 +365,7 @@ c _hum amount of pool that becomes hum
       
       exc = exp(-conr*tstep) 
       
-      IOM_Rage =50000.0
+      IOM_Rage =50000.0   ! need to think about IOM
       
  
 C C decomposition
@@ -369,12 +373,14 @@ C C decomposition
       RPM1 = RPM * exp(-RateM*RPM_k*tstep)      
       Bio1 = Bio * exp(-RateM*Bio_k*tstep)      
       Hum1 = Hum * exp(-RateM*Hum_k*tstep) 
+      IOM1 = IOM * exp(-RateM*IOM_k*tstep) 
 
       
       DPM_d = DPM - DPM1
       RPM_d = RPM - RPM1      
       Bio_d = Bio - Bio1
       Hum_d = Hum - Hum1 
+      IOM_d = IOM - IOM1 
       
 
       X=1.67*(1.85+1.60*EXP(-0.0786*Clay))
@@ -383,28 +389,40 @@ C C decomposition
 C proportion C from each pool into CO2, Bio and Hum      
       DPM_co2 = DPM_d * (x / (x+1))
       DPM_bio = DPM_d * (0.46 / (x+1))
-      DPM_hum = DPM_d * (0.54 / (x+1))
+      DPM_hum = DPM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      DPM_iom = DPM_d * (0.0 / (x+1))    !
       
       RPM_co2 = RPM_d * (x / (x+1))
       RPM_bio = RPM_d * (0.46 / (x+1))
-      RPM_hum = RPM_d * (0.54 / (x+1))    
+      RPM_hum = RPM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      RPM_iom = RPM_d * (0.0 / (x+1))    !   
       
       Bio_co2 = Bio_d * (x / (x+1))
       Bio_bio = Bio_d* (0.46 / (x+1))
-      Bio_hum = Bio_d * (0.54 / (x+1))
+      Bio_hum = Bio_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      Bio_iom = Bio_d * (0.0 / (x+1))
+      
       
       Hum_co2 = Hum_d * (x / (x+1))
       Hum_bio = Hum_d * (0.46 / (x+1))
-      Hum_hum = Hum_d * (0.54 / (x+1))  
-           
+      Hum_hum = Hum_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      Hum_iom = Hum_d * (0.0 / (x+1))    !     
+
+            
+      IOM_co2 = IOM_d * (x / (x+1))
+      IOM_bio = IOM_d * (0.46 / (x+1))
+      IOM_hum = IOM_d * (0.54 / (x+1))    ! split what becomes Hum into Hum 50% and IOM 50% 
+      IOM_iom = IOM_d * (0.0 / (x+1))    !     
       
 C update C pools  
       DPM = DPM1
       RPM = RPM1
-      Bio = Bio1 + DPM_bio + RPM_bio + Bio_bio + Hum_bio
-      Hum = Hum1 + DPM_hum + RPM_hum + Bio_hum + Hum_hum    
+      Bio = Bio1 + DPM_bio + RPM_bio + Bio_bio + Hum_bio + IOM_bio
+      Hum = Hum1 + DPM_hum + RPM_hum + Bio_hum + Hum_hum + IOM_Hum
+      IOM = IOM1 + DPM_iom + RPM_iom + Bio_iom + Hum_iom + IOM_iom
       
       total_CO2 = total_CO2 + DPM_co2 + RPM_co2 + Bio_co2 + Hum_co2
+     &                      + IOM_co2
       
 C split plant C to DPM and RPM 
       PI_C_DPM = PL_DPM_f * C_Inp

@@ -1,7 +1,7 @@
 C******************************************************************************
 C  Wrapper for RothC model 
 C
-C  August 2025
+C  September 2025 (branch for the Saturation carbon project)
 C
 C  Kevin Coleman
 C  Jonah Prout
