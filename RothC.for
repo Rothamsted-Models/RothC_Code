@@ -303,8 +303,10 @@ C
       real*8, parameter :: zero = 0e-8
 C rate constant are params so don't need to be passed
 !      real*8, parameter :: tstep = 1/12.0
-      real*8, parameter :: DPM_k = 10.0,  RPM_k = 0.3
-      real*8, parameter :: Bio_k = 0.66,  Hum_k = 0.02 
+      real*8, parameter :: DPM_k = 10.0            ! Rate constant for DPM
+      real*8, parameter :: RPM_k = 0.3             ! Rate constant for RPM
+      real*8, parameter :: Bio_k = 0.66            ! Rate constant for Bio
+      real*8, parameter :: Hum_k = 0.02            ! Rate constant for Hum
       real*8, parameter :: IOM_k = 0.02           ! Rate constant for IOM
     
       real*8, parameter ::  conr = log(2.0) / 5568.0
@@ -373,8 +375,12 @@ C C decomposition
       RPM1 = RPM * exp(-RateM*RPM_k*tstep)      
       Bio1 = Bio * exp(-RateM*Bio_k*tstep)      
       Hum1 = Hum * exp(-RateM*Hum_k*tstep) 
-      IOM1 = IOM * exp(-RateM*IOM_k*tstep) 
-
+ !     IOM1 = IOM * exp(-RateM*IOM_k*tstep) 
+      if(IOM.GE.0.01)then 
+        IOM1 = 3.8/(1 + (( 3.8 - IOM)/IOM)*exp(-RateM*IOM_k*tstep) ) 
+	else
+        IOM1 = 0.0
+      endif
       
       DPM_d = DPM - DPM1
       RPM_d = RPM - RPM1      
