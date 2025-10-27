@@ -1,7 +1,7 @@
 C******************************************************************************
 C  RothC model
 C
-C  August 2025
+C  October 2025
 C
 C  
 C  Kevin Coleman
@@ -75,7 +75,7 @@ C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
 C
 C******************************************************************************      
          
-      Subroutine RothC(timeFact, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
+      Subroutine RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &    DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &    PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
@@ -84,7 +84,7 @@ C******************************************************************************
       
       implicit none
       
-      integer timeFact
+      integer opt_tstep
       
       integer PC
       
@@ -138,7 +138,7 @@ C combine RMF's into one.
       
 
       
-      call decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
+      call decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
      &     RateM, clay, C_Inp, OA_Inp,
      &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
@@ -293,7 +293,7 @@ C**********************************************************************
 C      calculates the decomposition and radiocarbon 
 C**********************************************************************     
 C
-      Subroutine decomp(timeFact, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
+      Subroutine decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
      &       DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
      &       RateM, clay, C_Inp, OA_Inp,
      &       PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
@@ -309,7 +309,7 @@ C rate constant are params so don't need to be passed
       real*8, parameter ::  conr = log(2.0) / 5568.0
 !     real*8, parameter ::  exc = exp(-conr*tstep) 
       
-      integer timeFact
+      integer opt_tstep
       
       real*8 tstep, exc
       
@@ -357,7 +357,11 @@ c _hum amount of pool that becomes hum
  
       real*8 X
  
-      tstep = 1.0/timeFact    ! monthly 1/12, or daily 1/365  
+      if(opt_tstep == 1)then
+        tstep = 1.0/12
+      elseif(opt_tstep == 2)then
+        tstep = 1.0/365  
+      endif
       
       exc = exp(-conr*tstep) 
       
