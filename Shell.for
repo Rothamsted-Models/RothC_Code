@@ -30,9 +30,12 @@ C             !  3: Van Genuchten soil properties, but uses the Standard RothC s
 C      
 C opt_SMDbare !  1: Standard RothC bareSMD, 
 C             !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+C      
+C opt_tstep !  1: Monthly time step
+C           !  2: Daily time step
 C
 C year:     year
-C month:    month (1-12)
+C tstep:    month (1-12) or day (1 to 365) depending on opt_tstep
 C modern:   %modern 
 C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
@@ -138,7 +141,7 @@ C
       
       real*8 modernC
       
-      ! C_inp (Carbon input to the soil each month units: t C /ha)
+      ! C_inp (Carbon input to the soil each tstep units: t C /ha)
       
       real*8 C_inp, OA_Inp
       
@@ -264,7 +267,7 @@ C
        k = k + 1
        j = j + 1 
        
-       if(k.eq.year_end+1)k = 1   ! 13 if monthly
+       if(k.eq.year_end+1)k = 1   ! 13 if monthly or 366 if daily
          if (test < 1E-6) exit
          YEAR = t_year(k)
          TEMP = t_tmp(k)
@@ -322,14 +325,14 @@ C
 102   format(1x, i8, ',', 1x, i6, ',', 7(f11.4,','),  f8.2)     
                                                              
 C      
-C run RothC for months 13 to the end: START
+C run RothC for remaining timesteps to the end: START
 C     
       k_tstep = 0
-      do i = year_end+1, nsteps, 1   ! 13 if monthly
+      do i = year_end+1, nsteps, 1   ! 13 if monthly or 366 if daily
       
 	  k_tstep = k_tstep + 1
             
-        if(k_tstep.eq.year_end+1)k_tstep = 1   ! 13 if monthly
+        if(k_tstep.eq.year_end+1)k_tstep = 1   ! 13 if monthly or 366 if daily
          
         
          YEAR = t_year(i)
@@ -378,7 +381,7 @@ C
          
       enddo  
 C      
-C run RothC for months 13 to the end: END
+C run RothC for remaining timesteps to the end: END
 C   
       
       call cpu_time (time_end)
