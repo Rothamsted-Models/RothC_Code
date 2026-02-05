@@ -17,7 +17,7 @@ C nsteps:      number of timesteps
 
 C
 C The following are needed for the Farina modification to the model (Farina et al, 2013, Geoderma. 200, 18-30, 10.1016/j.geoderma.2013.01.021)
-C slit:        silt content of the soil (units: %) 
+C silt:        silt content of the soil (units: %) 
 C BD:          bulk density (units: g/cm3)
 C OC:          organic carbon (units: %)
 C minRM_Moist: the minimum value the rate modifying factor for moisture can be (units: -, default=0.2)
@@ -40,11 +40,11 @@ C modern:   %modern
 C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
 C Evap:     open pan evaporation (mm)
-C C_inp:    Carbon input to the soil each month (units: t C /ha)
-C OA:       Organic amendment input to the soil each month (units: t C /ha)
+C Pl_inp:   Carbon input to the soil each month from plants (units: t C /ha)
+C OA_inp:   Organic amendment input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
-C PL_DPM_f: Fraction of plant carbon to DPM
-C PL_DPM_f: Fraction of plant carbon to RPM
+C Pl_DPM_f: Fraction of plant carbon to DPM
+C Pl_DPM_f: Fraction of plant carbon to RPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
 C OA_RPM_f: Fraction of organic amendment carbon to RPM
 C OA_Bio_f: Fraction of organic amendment carbon to Bio
@@ -83,13 +83,13 @@ C
       
       real*8 t_evap(MAXsteps)    
       
-      real*8 t_C_Inp(MAXsteps)
+      real*8 t_Pl_inp(MAXsteps)
       
-      real*8 t_OA_Inp(MAXsteps)
+      real*8 t_OA_inp(MAXsteps)
       
-      real*8 t_PL_DPM_f(MAXsteps) ! fraction of plant C to DPM
+      real*8 t_Pl_DPM_f(MAXsteps) ! fraction of plant C to DPM
       
-      real*8 t_PL_RPM_f(MAXsteps) ! fraction of plant C to RPM
+      real*8 t_Pl_RPM_f(MAXsteps) ! fraction of plant C to RPM
       
       real*8 t_OA_DPM_f(MAXsteps) ! fraction of org amd C to DPM
       
@@ -143,10 +143,10 @@ C
       
       ! C_inp (Carbon input to the soil each tstep units: t C /ha)
       
-      real*8 C_inp, OA_Inp
+      real*8 Pl_inp, OA_inp
       
       ! pool_f are the decimal fractions of plant and amendment C
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
+      real*8 Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
       real*8 SMD      
       
@@ -204,8 +204,8 @@ C read in RothC input data file: data will be passed from other programs at some
 
 	do i = 1, nsteps
 	  read(11,*)t_year(i), t_tstep(i), t_mod(i), t_tmp(i),t_rain(i),
-     &      t_evap(i), t_C_Inp(i), t_OA_Inp(i), t_PC(i),
-     &      t_PL_DPM_f(i), t_PL_RPM_f(i), t_OA_DPM_f(i), t_OA_RPM_f(i),
+     &      t_evap(i), t_Pl_inp(i), t_OA_inp(i), t_PC(i),
+     &      t_Pl_DPM_f(i), t_Pl_RPM_f(i), t_OA_DPM_f(i), t_OA_RPM_f(i),
      &      t_OA_Bio_f(i), t_OA_Hum_f(i)
       enddo
       
@@ -247,8 +247,8 @@ C
       test = 100.0
       
        write(91,9100)
-9100  format(4x, 'Year,',1x,  'tstep,',1x, 'C_Inp_t_C_ha,', 
-     &  1x,  'OA_Inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
+9100  format(4x, 'Year,',1x,  'tstep,',1x, 'Pl_inp_t_C_ha,', 
+     &  1x,  'OA_inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
      &  1x, 'RAIN_mm,', 1x, 'PEVAP_mm,',1x, 'SMD_mm,',
      &  1x,'RM_Moist,', 1x, 'PC,', 1x,  'RM_PC,',  
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
@@ -278,8 +278,8 @@ C
          PEVAP = t_evap(k)
          
          PC = t_PC(k)
-         PL_DPM_f = t_PL_DPM_f(k)
-         PL_RPM_f = t_PL_RPM_f(k)
+         Pl_DPM_f = t_Pl_DPM_f(k)
+         Pl_RPM_f = t_Pl_RPM_f(k)
          
          OA_DPM_f = t_OA_DPM_f(k)
          OA_RPM_f = t_OA_RPM_f(k)
@@ -287,16 +287,16 @@ C
          OA_Hum_f = t_OA_Hum_f(k)
          
          
-         C_inp = t_C_Inp(k)
-         OA_Inp = t_OA_Inp(k)
+         Pl_inp = t_Pl_inp(k)
+         OA_inp = t_OA_inp(k)
          
          modernC = t_mod(k) / 100.0             
          
          call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
-     &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &     Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
         
          if(mod(k, year_end)== 0)then 
@@ -344,30 +344,30 @@ C
          PEVAP = t_evap(i)
          
          PC = t_PC(i)
-         PL_DPM_f = t_PL_DPM_f(i)
-         PL_RPM_f = t_PL_RPM_f(i)
+         Pl_DPM_f = t_Pl_DPM_f(i)
+         Pl_RPM_f = t_Pl_RPM_f(i)
          
          OA_DPM_f = t_OA_DPM_f(i)
          OA_RPM_f = t_OA_RPM_f(i)
          OA_Bio_f = t_OA_Bio_f(i)
          OA_Hum_f = t_OA_Hum_f(i)
          
-         C_inp = t_C_Inp(i)
-         OA_Inp = t_OA_Inp(i)
+         Pl_inp = t_Pl_inp(i)
+         OA_Inp = t_OA_inp(i)
          
          modernC = t_mod(i) / 100.0
            
          call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
-     &     C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &     Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)    
          
          Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0
          
          
-         write(91,9103) Year, k_tstep, C_Inp, OA_Inp, TEMP,RM_TMP, 
+         write(91,9103) Year, k_tstep, Pl_inp, OA_inp, TEMP,RM_TMP, 
      &        RAIN, PEVAP, SMD, RM_Moist, PC, RM_PC,
      &        DPM,RPM,Bio,Hum, IOM, SOC, total_CO2
      
