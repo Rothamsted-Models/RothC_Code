@@ -40,11 +40,11 @@ C modern:   %modern
 C TMP:      Air temperature (C)
 C Rain:     Rainfall (mm)
 C Evap:     open pan evaporation (mm)
-C C_inp:    Carbon input to the soil each month (units: t C /ha)
-C OA:      Farmyard manure input to the soil each month (units: t C /ha)
+C Pl_inp:   Carbon input to the soil each month (units: t C /ha)
+C OA_inp:   Farmyard manure input to the soil each month (units: t C /ha)
 C PC:       Plant cover (0 = no cover, 1 = covered by a crop)
-C PL_DPM_f: Fraction of plant carbon to DPM
-C PL_DPM_f: Fraction of plant carbon to RPM
+C Pl_DPM_f: Fraction of plant carbon to DPM
+C Pl_DPM_f: Fraction of plant carbon to RPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
 C OA_DPM_f: Fraction of organic amendment carbon to DPM
@@ -411,8 +411,8 @@ C update C pools
       total_CO2 = total_CO2 + DPM_co2 + RPM_co2 + Bio_co2 + Hum_co2
       
 C split plant C to DPM and RPM 
-      Pl_C_DPM = Pl_DPM_f * C_Inp
-      Pl_C_RPM = Pl_RPM_f * C_Inp
+      Pl_C_DPM = Pl_DPM_f * Pl_inp
+      Pl_C_RPM = Pl_RPM_f * Pl_inp
 
 C split OA C to DPM, RPM and Hum 
       OA_C_DPM = OA_DPM_f * OA_Inp
@@ -421,8 +421,8 @@ C split OA C to DPM, RPM and Hum
       OA_C_Hum = OA_Hum_f * OA_Inp
 
 C add Plant C and OA_C to DPM, RPM and Hum   
-      DPM = DPM + PI_C_DPM + OA_C_DPM
-      RPM = RPM + PI_C_RPM + OA_C_RPM  
+      DPM = DPM + Pl_C_DPM + OA_C_DPM
+      RPM = RPM + Pl_C_RPM + OA_C_RPM  
       Bio = Bio + OA_C_Bio
       Hum = Hum + OA_C_Hum
       
