@@ -195,7 +195,7 @@ C read in RothC input data file: data will be passed from other programs at some
       read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
       if (opt_RMmoist.eq.1)then
-        read(11,*)nsteps clay, depth
+        read(11,*)nsteps, clay, depth
       else
         read(11,*)nsteps, clay, depth, silt, BD, OC, minRM_Moist
       endif
