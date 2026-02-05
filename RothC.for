@@ -78,8 +78,8 @@ C******************************************************************************
       Subroutine RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
      &    DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
      &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
-     &    PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
-     &    C_Inp, OA_Inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &    Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &    Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &    opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)
       
       implicit none
@@ -112,11 +112,11 @@ C******************************************************************************
       real*8 minRM_Moist  ! (units: -, default=0.2) needed for the farina (2013) version
       
       ! pool_f are the decimal fractions of plant and amendment C
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
+      real*8 Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
       real*8 TEMP, RAIN, PEVAP
       
-      real*8 C_Inp, OA_Inp
+      real*8 Pl_inp, OA_inp
       
       real*8 SMD
        
@@ -140,8 +140,8 @@ C combine RMF's into one.
       
       call decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
      &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &     RateM, clay, C_Inp, OA_Inp,
-     &     PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
+     &     RateM, clay, Pl_inp, OA_inp,
+     &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
      
      
       return
@@ -295,8 +295,8 @@ C**********************************************************************
 C
       Subroutine decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
      &       DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &       RateM, clay, C_Inp, OA_Inp,
-     &       PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
+     &       RateM, clay, Pl_inp, OA_inp,
+     &       Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
 C
       implicit none
       
@@ -320,11 +320,11 @@ C rate constant are params so don't need to be passed
       real*8 RateM
       real*8 Clay
       
-      real*8 C_Inp, OA_Inp
+      real*8 Pl_inp, OA_inp
       
-      real*8 PL_DPM_f, PL_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
+      real*8 Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f
       
-      real*8 PI_C_DPM, PI_C_RPM   
+      real*8 Pl_C_DPM, Pl_C_RPM   
       real*8 OA_C_DPM, OA_C_RPM, OA_C_Bio, OA_C_Hum
 
 C C that remains in each pool       
@@ -346,7 +346,7 @@ c _hum amount of pool that becomes hum
       
       real*8 DPM_Ract,RPM_Ract,Bio_Ract,Hum_Ract,IOM_Ract,Total_Ract
       
-      real*8 PI_DPM_Ract, PI_RPM_Ract
+      real*8 Pl_DPM_Ract, Pl_RPM_Ract
       
       real*8 OA_DPM_Ract, OA_RPM_Ract, OA_Bio_Ract, OA_Hum_Ract
       
@@ -411,8 +411,8 @@ C update C pools
       total_CO2 = total_CO2 + DPM_co2 + RPM_co2 + Bio_co2 + Hum_co2
       
 C split plant C to DPM and RPM 
-      PI_C_DPM = PL_DPM_f * C_Inp
-      PI_C_RPM = PL_RPM_f * C_Inp
+      Pl_C_DPM = Pl_DPM_f * C_Inp
+      Pl_C_RPM = Pl_RPM_f * C_Inp
 
 C split OA C to DPM, RPM and Hum 
       OA_C_DPM = OA_DPM_f * OA_Inp
@@ -445,8 +445,8 @@ C calc new ract of each pool
       IOM_Ract = IOM *exp(-conr*IOM_Rage) 
       
 C assign new C from plant and OA the correct age   
-      PI_DPM_Ract = modernC * PI_C_DPM
-      PI_RPM_Ract = modernC * PI_C_RPM
+      Pl_DPM_Ract = modernC * Pl_C_DPM
+      Pl_RPM_Ract = modernC * Pl_C_RPM
       
       OA_DPM_Ract = modernC * OA_C_DPM
       OA_RPM_Ract = modernC * OA_C_RPM
@@ -454,8 +454,8 @@ C assign new C from plant and OA the correct age
       OA_Hum_Ract = modernC * OA_C_Hum          
       
 C update ract for each pool        
-      DPM_Ract_new = OA_DPM_Ract + PI_DPM_Ract + DPM_Ract*exc
-      RPM_Ract_new = OA_RPM_Ract + PI_RPM_Ract + RPM_Ract*exc    
+      DPM_Ract_new = OA_DPM_Ract + Pl_DPM_Ract + DPM_Ract*exc
+      RPM_Ract_new = OA_RPM_Ract + Pl_RPM_Ract + RPM_Ract*exc    
       
       Bio_Ract_new = OA_Bio_Ract + (Bio_Ract + DPM_Bio_Ract + 
      &               RPM_Bio_Ract + Bio_Bio_Ract + Hum_Bio_Ract )*exc
