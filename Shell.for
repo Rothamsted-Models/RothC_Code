@@ -133,6 +133,10 @@ C
       integer opt_tstep !  1: Monthly, tstep = 1/12
                         !  2: Daily, tstep = 1/365
       
+      integer opt_spin !  1: 
+                       !  2: 
+                       ! 3: 
+      
       integer year_end
       
       real*8 TEMP, RAIN, PEVAP
@@ -188,10 +192,14 @@ C read in RothC input data file: data will be passed from other programs at some
 	read(11,*)               ! line is for info only 
 	read(11,*)               ! line is for info only 
 	read(11,*)               ! line is for info only 
-	read(11,*) opt_RMmoist, opt_SMDbare, opt_tstep   
+	read(11,*) opt_RMmoist, opt_SMDbare, opt_tstep, opt_spin 
 	read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
-      read(11,*) iom
+      if(opt_spin.eq.1)then
+        read(11,*) iom
+      else 
+        read(11,*) iom, dpm_init, rpm_init, Bio_init, Hum_init
+      endif 
       read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
       if (opt_RMmoist.eq.1)then
@@ -265,7 +273,7 @@ C
      &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
      &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)   
          
-      
+      ! if opt_spin = 1 
       do ! Run to equililibrium: cycles through the first 12 months
        k = k + 1
        j = j + 1 
@@ -306,6 +314,15 @@ C
          endif    
          
       enddo
+      
+      else
+       dpm= dpm_init
+       rpm= rpm_init
+       bio= bio_init
+       hum= hum_init
+          
+      endif
+       
       
       total_CO2 = 0.0 ! reset CO2 to zero after the equilibrium run
       
