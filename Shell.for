@@ -34,6 +34,10 @@ C
 C opt_tstep !  1: Monthly time step
 C           !  2: Daily time step
 C
+C opt_spin  !  1: use spin up
+            !  2: initialize but read in average weather
+            !  3: initialize but don't read in average weather
+C
 C year:     year
 C tstep:    month (1-12) or day (1 to 365) depending on opt_tstep
 C modern:   %modern 
@@ -112,6 +116,7 @@ C
       
       real*8 minRM_Moist ! (units: -, default=0.2) needed for the farina (2013) version
       
+      real*8 DPM_init, RPM_init, Bio_init, Hum_init ! initial values of dpm, rpm, bio, and hum if not using spin up mode
       
       real*8 DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
       
@@ -123,6 +128,8 @@ C
       
       integer YEAR, TIMESTEP
       
+
+      
       integer opt_RMmoist !  1: Standard RothC soil water parameters,
                           !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
                           !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
@@ -133,10 +140,11 @@ C
       integer opt_tstep !  1: Monthly, tstep = 1/12
                         !  2: Daily, tstep = 1/365
       
-      integer opt_spin !  1: 
-                       !  2: 
-                       ! 3: 
+      integer opt_Spin  !  1: use spin up
+                        !  2: initialize but read in average weather
+                        !  3: initialize but don't read in average weather
       
+      integer start_loop      
       integer year_end
       
       real*8 TEMP, RAIN, PEVAP
@@ -179,7 +187,7 @@ C
       IOM_Rage = 50000.0  
       
 
-C set initial soil water content (deficit) 
+C set initial soil water content ( soil moisture deficit) 
       SMD = 0.0
       
       minRM_Moist = 0.2  ! 0.2 is the default value for minRM_Moist for the farina (2013) version
@@ -255,7 +263,7 @@ C
       test = 100.0
       
        write(91,9100)
-9100  format(4x, 'Year,',1x,  'tstep,',1x, 'Pl_inp_t_C_ha,', 
+9100   format(4x, 'Year,',1x,  'tstep,',1x, 'Pl_inp_t_C_ha,', 
      &  1x,  'OA_inp_t_C_ha,', 1x,  'TEMP_C,', 1x, 'RM_TMP,',
      &  1x, 'RAIN_mm,', 1x, 'PEVAP_mm,',1x, 'SMD_mm,',
      &  1x,'RM_Moist,', 1x, 'PC,', 1x,  'RM_PC,',  
@@ -263,8 +271,12 @@ C
      &  1x, 'Bio_t_C_ha,', 1x, 'Hum_t_C_ha,',
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha') 
-     
-      YEAR = t_year(1)
+       
+      if(opt_spin==3)then
+        year = 1
+      else
+        YEAR = t_year(1)
+      endif
       
       write(91,9101) Year, j, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
      
@@ -273,53 +285,56 @@ C
      &           3x, ',', 6x, ',',f11.4, ',',f11.4,',', f11.4, ',',
      &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)   
          
-      ! if opt_spin = 1 
-      do ! Run to equililibrium: cycles through the first 12 months
-       k = k + 1
-       j = j + 1 
+
+      if (opt_spin == 1)then  
+        do ! Run to equililibrium: cycles through the first 12 months or 365 days
+          k = k + 1
+          j = j + 1 
        
-       if(k.eq.year_end+1)k = 1   ! 13 if monthly or 366 if daily
-         if (test < 1E-6) exit
-         YEAR = t_year(k)
-         TEMP = t_tmp(k)
-         RAIN = t_rain(k)
-         PEVAP = t_evap(k)
+          if(k.eq.year_end+1)k = 1   ! 13 if monthly or 366 if daily
+          if (test < 1E-8) exit
+          YEAR = t_year(k)
+          TEMP = t_tmp(k)
+          RAIN = t_rain(k)
+          PEVAP = t_evap(k)
          
-         PC = t_PC(k)
-         Pl_DPM_f = t_Pl_DPM_f(k)
-         Pl_RPM_f = t_Pl_RPM_f(k)
+          PC = t_PC(k)
+          Pl_DPM_f = t_Pl_DPM_f(k)
+          Pl_RPM_f = t_Pl_RPM_f(k)
          
-         OA_DPM_f = t_OA_DPM_f(k)
-         OA_RPM_f = t_OA_RPM_f(k)
-         OA_Bio_f = t_OA_Bio_f(k)
-         OA_Hum_f = t_OA_Hum_f(k)
+          OA_DPM_f = t_OA_DPM_f(k)
+          OA_RPM_f = t_OA_RPM_f(k)
+          OA_Bio_f = t_OA_Bio_f(k)
+          OA_Hum_f = t_OA_Hum_f(k)
          
          
-         Pl_inp = t_Pl_inp(k)
-         OA_inp = t_OA_inp(k)
+          Pl_inp = t_Pl_inp(k)
+          OA_inp = t_OA_inp(k)
          
-         modernC = t_mod(k) / 100.0             
+          modernC = t_mod(k) / 100.0             
          
-         call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
-     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
-     &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
-     &     Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
-     &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
+          call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
+     &      DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
+     &      modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
+     &      Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
+     &      Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
+     &      opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
         
-         if(mod(k, year_end)== 0)then 
-           TOC0 = TOC1
-           TOC1 = DPM+RPM+Bio+Hum
-           test = abs(TOC1-TOC0)            
-         endif    
+          if(mod(k, year_end)== 0)then 
+            TOC0 = TOC1
+            TOC1 = DPM+RPM+Bio+Hum
+            test = abs(TOC1-TOC0)            
+          endif    
          
-      enddo
+        enddo
       
-      else
+      else  ! if opt_spin is 2 or 3, set the dpm, rpm, bio, hum 
        dpm= dpm_init
        rpm= rpm_init
        bio= bio_init
        hum= hum_init
+       soc= dpm + rpm + bio + hum + iom
+       j = 1
           
       endif
        
@@ -347,8 +362,18 @@ C
 C      
 C run RothC for remaining timesteps to the end: START
 C     
+ !add an ifelse opt_spin = 2 here
+ ! add an else here for opt_spin = 3
+                                                             
       k_tstep = 0
-      do i = year_end+1, nsteps, 1   ! 13 if monthly or 366 if daily
+      
+      if(opt_spin==3)then
+          start_loop = 1
+      else
+          start_loop= year_end+1
+      endif
+      
+      do i = start_loop, nsteps, 1   ! 13 if monthly or 366 if daily
       
 	  k_tstep = k_tstep + 1
             
