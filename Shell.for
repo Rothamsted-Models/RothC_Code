@@ -168,10 +168,6 @@ C
       
       call cpu_time (time_begin)
       
-      IOM_Rage = 50000.0
-      IOM_Delta = (exp(-50000/8035.0) - 1.0) * 1000.0
-      
-      
       DPM = 0.0
       RPM = 0.0
       Bio = 0.0
@@ -184,8 +180,9 @@ C
       RPM_Rage = 0.0
       Bio_Rage = 0.0
       Hum_Rage = 0.0
-      IOM_Rage = 50000.0  
+      IOM_Rage = 50000.0 
       
+      IOM_Delta = (exp(-50000/8035.0) - 1.0) * 1000.0      
 
 C set initial soil water content ( soil moisture deficit) 
       SMD = 0.0
@@ -193,6 +190,8 @@ C set initial soil water content ( soil moisture deficit)
       minRM_Moist = 0.2  ! 0.2 is the default value for minRM_Moist for the farina (2013) version
 C
 C READ IN INPUT DATA: START
+C
+C NOTE: Input file is different if opt_spin = 3 is choosen
 C
 C read in RothC input data file: data will be passed from other programs at some point  
       open(11, file='RothC_input.dat', status='unknown')    
@@ -250,17 +249,33 @@ C
       
       SOC = DPM+RPM+Bio+Hum+IOM
       
+      if(opt_spin==1)then
         write(71,7100)
+      else
+        write(71,7101)
+      endif
+      
 7100  format(5x, 'Year,', 2x,  'tstep,', 
      &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
      &  1x, 'Bio_t_C_ha,', 1x, 'Hum_t_C_ha,',
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha,', 1x, ' deltaC')     
              
-      write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
+7101  format(5x, 'Year,', 2x,  'tstep,', 
+     &  1x, 'DPM_t_C_ha,', 1x,  'RPM_t_C_ha,', 
+     &  1x, 'Bio_t_C_ha,', 1x, 'Hum_t_C_ha,',
+     &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
+     &  1x, 'CO2_t_C_ha,')   
+
+      if(opt_spin==1)then
+        write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
+      else
+        write(71,111) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
+      endif     
+             
 101   format(1x, '       0,', 1x, i6, ',', 7(f11.4, ','), ' -998.02')  
-          
-      test = 100.0
+111   format(1x, '       0,', 1x, i6, ',', 7(f11.4, ','))  
+
       
        write(91,9100)
 9100   format(4x, 'Year,',1x,  'tstep,',1x, 'Pl_inp_t_C_ha,', 
@@ -272,6 +287,8 @@ C
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha') 
        
+      test = 100.0   
+      
       if(opt_spin==3)then
         year = 1
       else
@@ -313,9 +330,9 @@ C
          
           modernC = t_mod(k) / 100.0             
          
-          call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
-     &      DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &      modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
+          call RothC(opt_tstep, opt_spin, DPM,RPM,Bio,Hum,IOM, SOC, 
+     &      total_CO2, DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, 
+     &      Total_Rage, modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &      Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &      Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &      opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)  
@@ -355,10 +372,16 @@ C
          
       Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
       
-      write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC, total_CO2, 
-     &              Total_Delta
+      if(opt_spin==1)then
+        write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC,  
+     &             total_CO2, Total_Delta
+      else
+        write(71,112) year, j-1, DPM, RPM, Bio, Hum, iom, SOC,  
+     &             total_CO2
+      endif
+      
 102   format(1x, i8, ',', 1x, i6, ',', 7(f11.4,','),  f8.2)     
-                                                             
+112   format(1x, i8, ',', 1x, i6, ',', 6(f11.4,','),  f11.4)
 C      
 C run RothC for remaining timesteps to the end: START
 C     
@@ -399,9 +422,9 @@ C
          
          modernC = t_mod(i) / 100.0
            
-         call RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
-     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
-     &     modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
+         call RothC(opt_tstep, opt_spin, DPM,RPM,Bio,Hum,IOM, SOC, 
+     &     total_CO2, DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, 
+     &     Total_Rage, modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &     Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
      &     opt_RMmoist, opt_SMDbare, silt, BD, OC, minRM_Moist)    
@@ -420,8 +443,12 @@ C
 
 
       if(mod(i, year_end)== 0)then     ! print out results once a year
-        write(71,103) year, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2, 
+        if(opt_spin==1)then
+          write(71,103) year, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2, 
      &                Total_Delta
+        else
+          write(71,113) year, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2
+        endif
       endif
          
       enddo  
@@ -432,9 +459,10 @@ C
       call cpu_time (time_end)
       
 !      write(81,*) 'Time of operation was ', 
-!     $    time_end - time_begin, ' seconds'
+!     $    time_end - time_begin, ' seconds'    
            
  103  format(1x,  i7, ',', 6x, '12,', 7(f11.4, ','), f8.2)  
+ 113  format(1x,  i7, ',', 6x, '12,', 6(f11.4, ','), f11.4)  
  
       close (71)
       close (91)

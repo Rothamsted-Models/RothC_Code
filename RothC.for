@@ -32,7 +32,15 @@ C             !  2: Van Genuchten soil properties and soil is allowed to be drie
 C             !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
 C      
 C opt_SMDbare !  1: Standard RothC bareSMD, 
-C             !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+C             !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)  
+C      
+C opt_tstep   !  1: Monthly time step
+C             !  2: Daily time step
+C
+C opt_spin    !  1: use spin up
+              !  2: initialize but read in average weather
+              !  3: initialize but don't read in average weather
+C
 C
 C
 C year:    year
@@ -75,8 +83,8 @@ C  RM_PC:     rate modifying fator for plant retainment (0.6 or 1.0)
 C
 C******************************************************************************      
          
-      Subroutine RothC(opt_tstep, DPM,RPM,Bio,Hum,IOM, SOC, total_CO2, 
-     &    DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, 
+      Subroutine RothC(opt_tstep, opt_spin, DPM,RPM,Bio,Hum,IOM, SOC,
+     &    total_CO2, DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage,
      &    modernC, clay, depth,TEMP,RAIN,PEVAP,PC,
      &    Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f,
      &    Pl_inp, OA_inp, SMD, RM_TMP, RM_Moist, RM_PC, 
@@ -84,16 +92,21 @@ C******************************************************************************
       
       implicit none
       
-      integer opt_tstep
+      integer opt_tstep !  1: Monthly, tstep = 1/12
+                        !  2: Daily, tstep = 1/365
       
-      integer PC
+      integer opt_Spin  !  1: use spin up
+                        !  2: initialize but read in average weather
+                        !  3: initialize but don't read in average weather
       
       integer opt_RMmoist !  1: Standard RothC soil water parameters,
                           !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
                           !  3: Van Genuchten soil properties, but uses the Standard RothC soil water function
       
       integer opt_SMDbare !  1: Standard RothC bareSMD, 
-                          !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)
+                          !  2: bareSMD is set to wilting point -15bar (could be better for dry soils)      
+      
+      integer PC      
 
       real*8 DPM,RPM,Bio,Hum,IOM,SOC, total_CO2
       
@@ -138,9 +151,9 @@ C combine RMF's into one.
       
 
       
-      call decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,   
-     &     DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &     RateM, clay, Pl_inp, OA_inp,
+      call decomp(opt_tstep, opt_spin, DPM,RPM,Bio,Hum, IOM, SOC, 
+     &     total_CO2,   DPM_Rage, RPM_Rage, Bio_Rage, Hum_Rage, 
+     &     Total_Rage, modernC,RateM, clay, Pl_inp, OA_inp,
      &     Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
      
      
@@ -293,12 +306,19 @@ C**********************************************************************
 C      calculates the decomposition and radiocarbon 
 C**********************************************************************     
 C
-      Subroutine decomp(opt_tstep, DPM,RPM,Bio,Hum, IOM, SOC, total_CO2,
-     &       DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, Total_Rage, modernC,
-     &       RateM, clay, Pl_inp, OA_inp,
+      Subroutine decomp(opt_tstep, opt_spin, DPM,RPM,Bio,Hum, IOM, SOC, 
+     &       total_CO2,DPM_Rage,RPM_Rage, Bio_Rage, Hum_Rage, 
+     &       Total_Rage, modernC, RateM, clay, Pl_inp, OA_inp,
      &       Pl_DPM_f, Pl_RPM_f, OA_DPM_f, OA_RPM_f, OA_Bio_f, OA_Hum_f)
 C
       implicit none
+      
+      integer opt_tstep !  1: Monthly, tstep = 1/12
+                        !  2: Daily, tstep = 1/365
+      
+      integer opt_Spin  !  1: use spin up
+                        !  2: initialize but read in average weather
+                        !  3: initialize but don't read in average weather  
       
       real*8, parameter :: zero = 0e-8
 C rate constant are params so don't need to be passed
@@ -309,7 +329,7 @@ C rate constant are params so don't need to be passed
       real*8, parameter ::  conr = log(2.0) / 5568.0
 !     real*8, parameter ::  exc = exp(-conr*tstep) 
       
-      integer opt_tstep
+
       
       real*8 tstep, exc
       
@@ -426,80 +446,84 @@ C add Plant C and OA_C to DPM, RPM and Hum
       Bio = Bio + OA_C_Bio
       Hum = Hum + OA_C_Hum
       
+      if (opt_spin.eq.1) then
+      
 C calc new ract of each pool      
-      DPM_Ract = DPM1 *exp(-conr*DPM_Rage)
-      RPM_Ract = RPM1 *exp(-conr*RPM_Rage) 
+        DPM_Ract = DPM1 *exp(-conr*DPM_Rage)
+        RPM_Ract = RPM1 *exp(-conr*RPM_Rage) 
       
-      Bio_Ract = Bio1 *exp(-conr*Bio_Rage)
-      DPM_Bio_Ract = DPM_Bio * exp(-conr*DPM_Rage)
-      RPM_Bio_Ract = RPM_Bio * exp(-conr*RPM_Rage)
-      Bio_Bio_Ract = Bio_Bio * exp(-conr*Bio_Rage)
-      Hum_Bio_Ract = Hum_Bio * exp(-conr*Hum_Rage)
+        Bio_Ract = Bio1 *exp(-conr*Bio_Rage)
+        DPM_Bio_Ract = DPM_Bio * exp(-conr*DPM_Rage)
+        RPM_Bio_Ract = RPM_Bio * exp(-conr*RPM_Rage)
+        Bio_Bio_Ract = Bio_Bio * exp(-conr*Bio_Rage)
+        Hum_Bio_Ract = Hum_Bio * exp(-conr*Hum_Rage)
       
-      Hum_Ract = Hum1 *exp(-conr*Hum_Rage)   
-      DPM_Hum_Ract = DPM_Hum * exp(-conr*DPM_Rage)
-      RPM_Hum_Ract = RPM_Hum * exp(-conr*RPM_Rage)
-      Bio_Hum_Ract = Bio_Hum * exp(-conr*Bio_Rage)
-      Hum_Hum_Ract = Hum_Hum * exp(-conr*Hum_Rage)
+        Hum_Ract = Hum1 *exp(-conr*Hum_Rage)   
+        DPM_Hum_Ract = DPM_Hum * exp(-conr*DPM_Rage)
+        RPM_Hum_Ract = RPM_Hum * exp(-conr*RPM_Rage)
+        Bio_Hum_Ract = Bio_Hum * exp(-conr*Bio_Rage)
+        Hum_Hum_Ract = Hum_Hum * exp(-conr*Hum_Rage)
       
-      IOM_Ract = IOM *exp(-conr*IOM_Rage) 
+        IOM_Ract = IOM *exp(-conr*IOM_Rage) 
       
 C assign new C from plant and OA the correct age   
-      Pl_DPM_Ract = modernC * Pl_C_DPM
-      Pl_RPM_Ract = modernC * Pl_C_RPM
+        Pl_DPM_Ract = modernC * Pl_C_DPM
+        Pl_RPM_Ract = modernC * Pl_C_RPM
       
-      OA_DPM_Ract = modernC * OA_C_DPM
-      OA_RPM_Ract = modernC * OA_C_RPM
-      OA_Bio_Ract = modernC * OA_C_Bio
-      OA_Hum_Ract = modernC * OA_C_Hum          
+        OA_DPM_Ract = modernC * OA_C_DPM
+        OA_RPM_Ract = modernC * OA_C_RPM
+        OA_Bio_Ract = modernC * OA_C_Bio
+        OA_Hum_Ract = modernC * OA_C_Hum          
       
 C update ract for each pool        
-      DPM_Ract_new = OA_DPM_Ract + Pl_DPM_Ract + DPM_Ract*exc
-      RPM_Ract_new = OA_RPM_Ract + Pl_RPM_Ract + RPM_Ract*exc    
+        DPM_Ract_new = OA_DPM_Ract + Pl_DPM_Ract + DPM_Ract*exc
+        RPM_Ract_new = OA_RPM_Ract + Pl_RPM_Ract + RPM_Ract*exc    
       
-      Bio_Ract_new = OA_Bio_Ract + (Bio_Ract + DPM_Bio_Ract + 
+        Bio_Ract_new = OA_Bio_Ract + (Bio_Ract + DPM_Bio_Ract + 
      &               RPM_Bio_Ract + Bio_Bio_Ract + Hum_Bio_Ract )*exc
       
-      Hum_Ract_new = OA_Hum_Ract + (Hum_Ract + DPM_Hum_Ract +
+        Hum_Ract_new = OA_Hum_Ract + (Hum_Ract + DPM_Hum_Ract +
      &               RPM_Hum_Ract + Bio_Hum_Ract + Hum_Hum_Ract )*exc  
       
       
-      SOC = DPM + RPM + Bio + Hum + IOM      
+        SOC = DPM + RPM + Bio + Hum + IOM      
       
-      Total_Ract = DPM_RACT_new + RPM_Ract_new +
+       Total_Ract = DPM_RACT_new + RPM_Ract_new +
      &           Bio_Ract_new + Hum_Ract_new + IOM_Ract
       
 
 C calculate rage of each pool.      
-      if(DPM.le.zero)then
-        DPM_Rage = zero
-      else
-        DPM_Rage = ( log(DPM/DPM_Ract_new) ) / conr
-      endif
+        if(DPM.le.zero)then
+          DPM_Rage = zero
+        else
+          DPM_Rage = ( log(DPM/DPM_Ract_new) ) / conr
+        endif
       
-      if(RPM.le.zero)then
-        RPM_Rage = zero
-      else
-        RPM_Rage = ( log(RPM/RPM_Ract_new) ) / conr 
-      endif
+        if(RPM.le.zero)then
+          RPM_Rage = zero
+        else
+          RPM_Rage = ( log(RPM/RPM_Ract_new) ) / conr 
+        endif
       
-      if(Bio.le.zero)then
-        Bio_Rage = zero
-      else
-        Bio_Rage = ( log(Bio/Bio_Ract_new) ) / conr
-      endif
+        if(Bio.le.zero)then
+          Bio_Rage = zero
+        else
+          Bio_Rage = ( log(Bio/Bio_Ract_new) ) / conr
+        endif
       
-      if(Hum.le.zero)then
-        Hum_Rage = zero
-      else
-        Hum_Rage = ( log(Hum/Hum_Ract_new) ) / conr
-      endif
+        if(Hum.le.zero)then
+          Hum_Rage = zero
+        else
+          Hum_Rage = ( log(Hum/Hum_Ract_new) ) / conr
+        endif
         
-      if(SOC.le.zero)then
-        Total_Rage = zero
-      else
-        Total_Rage = ( log(SOC/Total_Ract) ) / conr    
-      endif
+        if(SOC.le.zero)then
+          Total_Rage = zero
+        else
+          Total_Rage = ( log(SOC/Total_Ract) ) / conr    
+        endif
+      
+      endif 
       
       RETURN
       END
