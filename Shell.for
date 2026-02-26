@@ -222,7 +222,7 @@ C read in RothC input data file: data will be passed from other programs at some
       read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
       if (opt_RMmoist.eq.1)then
-        read(11,*)nsteps, clay, silt, depth,  BD, OC                  ! Note_SPIN: changed read order
+        read(11,*)nsteps, clay, silt, depth,  BD, OC                  ! Note_SPIN: changed read order, and read in silt, depth, BD and OC
       else
         read(11,*)nsteps, clay, silt, depth,  BD, OC, minRM_Moist     ! Note_SPIN: changed read order
       endif
@@ -258,7 +258,7 @@ C
       k = 0
       j = 0
       
-      if(opt_spin == 2)then
+      if(opt_spin == 2)then           ! NOTE_SPIN calculate initial SOC and iom 
         measTOC = depth * BD * OC    ! NOTE_SPIN: calculate measured SOC from depth, BD and OC
         IOM = 0.049 * measTOC**1.139 ! NOTE_SPIN: this replaces the value read in with the Falloon estimate  
       endif 
@@ -377,10 +377,10 @@ C
 !
 ! NOTE_SPIN post eq start
 !
-      if(opt_spin == 2)then         
+      if(opt_spin == 2)then       ! use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
         modTOC = DPM+RPM+Bio+Hum+IOM
           
-        write(81,8101)DPM, RPM, Bio, Hum, IOM, modTOC
+        write(81,8101)DPM, RPM, Bio, Hum, IOM, modTOC ! write statements can be removed 
         write(81,8102)measTOC    
         write(81,8103)(t_Pl_inp(ii), ii=1,12) 
         write(81,*)
@@ -401,7 +401,7 @@ C
       
         SOC = DPM+RPM+Bio+Hum+IOM
       
-        write(81,8101)DPM, RPM, Bio, Hum, IOM, SOC
+        write(81,8101)DPM, RPM, Bio, Hum, IOM, SOC  ! write statements can be removed 
         write(81,8102)measTOC    
         write(81,8103)(t_Pl_inp(ii), ii=1,12) 
         

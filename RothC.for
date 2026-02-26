@@ -449,8 +449,10 @@ C add Plant C and OA_C to DPM, RPM and Hum
       Bio = Bio + OA_C_Bio
       Hum = Hum + OA_C_Hum
       
-      SOC = DPM + RPM + Bio + Hum + IOM    
-      
+      SOC = DPM + RPM + Bio + Hum + IOM
+      ! Note can be removed 
+      ! opt_spin    1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+      !             2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
       if ( (opt_spin.eq.1).or.(opt_spin.eq.2) ) then
       
 C calc new ract of each pool      
@@ -488,15 +490,11 @@ C update ract for each pool
      &               RPM_Bio_Ract + Bio_Bio_Ract + Hum_Bio_Ract )*exc
       
         Hum_Ract_new = OA_Hum_Ract + (Hum_Ract + DPM_Hum_Ract +
-     &               RPM_Hum_Ract + Bio_Hum_Ract + Hum_Hum_Ract )*exc  
-      
-      
- !       SOC = DPM + RPM + Bio + Hum + IOM      
+     &               RPM_Hum_Ract + Bio_Hum_Ract + Hum_Hum_Ract )*exc
       
        Total_Ract = DPM_RACT_new + RPM_Ract_new +
      &           Bio_Ract_new + Hum_Ract_new + IOM_Ract
       
-
 C calculate rage of each pool.      
         if(DPM.le.zero)then
           DPM_Rage = zero
