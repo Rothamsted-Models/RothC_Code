@@ -37,9 +37,10 @@ C
 C opt_tstep   !  1: Monthly time step
 C             !  2: Daily time step
 C
-C opt_spin    !  1: use spin up
-              !  2: initialize but read in average weather
-              !  3: initialize but don't read in average weather
+C opt_spin    !  1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+              !  2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
+              !  3: initialize but read in average weather
+              !  4: initialize but don't read in average weather
 C
 C
 C
@@ -95,9 +96,10 @@ C******************************************************************************
       integer opt_tstep !  1: Monthly, tstep = 1/12
                         !  2: Daily, tstep = 1/365
       
-      integer opt_Spin  !  1: use spin up
-                        !  2: initialize but read in average weather
-                        !  3: initialize but don't read in average weather
+      integer opt_Spin  !  1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+                        !  2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC   
+                        !  3: initialize but read in average weather
+                        !  4: initialize but don't read in average weather
       
       integer opt_RMmoist !  1: Standard RothC soil water parameters,
                           !  2: Van Genuchten soil properties and soil is allowed to be drier (ie hygroscopic / capillary water, -1000bar)
@@ -316,9 +318,10 @@ C
       integer opt_tstep !  1: Monthly, tstep = 1/12
                         !  2: Daily, tstep = 1/365
       
-      integer opt_Spin  !  1: use spin up
-                        !  2: initialize but read in average weather
-                        !  3: initialize but don't read in average weather  
+      integer opt_Spin  !  1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+                        !  2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
+                        !  3: initialize but read in average weather
+                        !  4: initialize but don't read in average weather  
       
       real*8, parameter :: zero = 0e-8
 C rate constant are params so don't need to be passed
@@ -446,7 +449,9 @@ C add Plant C and OA_C to DPM, RPM and Hum
       Bio = Bio + OA_C_Bio
       Hum = Hum + OA_C_Hum
       
-      if (opt_spin.eq.1) then
+      SOC = DPM + RPM + Bio + Hum + IOM    
+      
+      if ( (opt_spin.eq.1).or.(opt_spin.eq.2) ) then
       
 C calc new ract of each pool      
         DPM_Ract = DPM1 *exp(-conr*DPM_Rage)
@@ -486,7 +491,7 @@ C update ract for each pool
      &               RPM_Hum_Ract + Bio_Hum_Ract + Hum_Hum_Ract )*exc  
       
       
-        SOC = DPM + RPM + Bio + Hum + IOM      
+ !       SOC = DPM + RPM + Bio + Hum + IOM      
       
        Total_Ract = DPM_RACT_new + RPM_Ract_new +
      &           Bio_Ract_new + Hum_Ract_new + IOM_Ract

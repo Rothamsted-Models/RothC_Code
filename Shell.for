@@ -34,9 +34,10 @@ C
 C opt_tstep !  1: Monthly time step
 C           !  2: Daily time step
 C
-C opt_spin  !  1: use spin up
-            !  2: initialize but read in average weather
-            !  3: initialize but don't read in average weather
+C opt_spin    !  1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+              !  2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
+              !  3: initialize but read in average weather
+              !  4: initialize but don't read in average weather
 C
 C year:     year
 C tstep:    month (1-12) or day (1 to 365) depending on opt_tstep
@@ -140,9 +141,10 @@ C
       integer opt_tstep !  1: Monthly, tstep = 1/12
                         !  2: Daily, tstep = 1/365
       
-      integer opt_Spin  !  1: use spin up
-                        !  2: initialize but read in average weather
-                        !  3: initialize but don't read in average weather
+      integer opt_Spin  !  1: use spin up but dont calculate IOM and C input to the soil, required to match the initial SOC
+                        !  2: use spin up and calculate IOM and C input to the soil, required to match the initial SOC 
+                        !  3: initialize but read in average weather
+                        !  4: initialize but don't read in average weather
       
       integer start_loop      
       integer year_end
@@ -163,6 +165,12 @@ C
       real*8 SMD      
       
       real*8 toc0, toc1, test
+      
+      integer ii      ! NOTE_SPIN temp varible 
+      
+      real*8 measTOC, modTOC ! NOTE_SPIN meas and mod SOC 
+      
+      real*8 PI_con_fact  ! NOTE_SPIN meas and mod SOC
       
       real*8 time_begin, time_end
       
@@ -191,7 +199,11 @@ C set initial soil water content ( soil moisture deficit)
 C
 C READ IN INPUT DATA: START
 C
-C NOTE: Input file is different if opt_spin = 3 is choosen
+C NOTE: Input file is different if opt_spin = 4 is choosen
+C
+C NOTE_SPIN: using the spinup to set the plant input and IOM knowing the TOC
+C IMPORTANT
+C The order the soil properties are read in have changed
 C
 C read in RothC input data file: data will be passed from other programs at some point  
       open(11, file='RothC_input.dat', status='unknown')    
@@ -202,7 +214,7 @@ C read in RothC input data file: data will be passed from other programs at some
 	read(11,*) opt_RMmoist, opt_SMDbare, opt_tstep, opt_spin 
 	read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
-      if(opt_spin.eq.1)then
+      if( (opt_spin.eq.1).or.(opt_spin.eq.2) )then
         read(11,*) iom
       else 
         read(11,*) iom, dpm_init, rpm_init, Bio_init, Hum_init
@@ -210,9 +222,9 @@ C read in RothC input data file: data will be passed from other programs at some
       read(11,*)               ! line is for info only  
 	read(11,*)               ! line is for info only 
       if (opt_RMmoist.eq.1)then
-        read(11,*)nsteps, clay, depth
+        read(11,*)nsteps, clay, silt, depth,  BD, OC                  ! Note_SPIN: changed read order
       else
-        read(11,*)nsteps, clay, depth, silt, BD, OC, minRM_Moist
+        read(11,*)nsteps, clay, silt, depth,  BD, OC, minRM_Moist     ! Note_SPIN: changed read order
       endif
       read(11,*)               ! line is for info only 
       read(11,*)               ! line is for info only 
@@ -246,10 +258,16 @@ C
       k = 0
       j = 0
       
+      if(opt_spin == 2)then
+        measTOC = depth * BD * OC    ! NOTE_SPIN: calculate measured SOC from depth, BD and OC
+        IOM = 0.049 * measTOC**1.139 ! NOTE_SPIN: this replaces the value read in with the Falloon estimate  
+      endif 
       
       SOC = DPM+RPM+Bio+Hum+IOM
       
-      if(opt_spin==1)then
+
+      
+      if(opt_spin==1 .or. opt_spin==2)then
         write(71,7100)
       else
         write(71,7101)
@@ -267,7 +285,7 @@ C
      &  1x, 'IOM_t_C_ha,', 1x, 'SOC_t_C_ha,', 
      &  1x, 'CO2_t_C_ha,')   
 
-      if(opt_spin==1)then
+      if(opt_spin==1 .or. opt_spin==2)then
         write(71,101) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
       else
         write(71,111) j, DPM, RPM, Bio, Hum, iom, SOC,total_CO2
@@ -289,7 +307,7 @@ C
        
       test = 100.0   
       
-      if(opt_spin==3)then
+      if(opt_spin==4)then
         year = 1
       else
         YEAR = t_year(1)
@@ -303,7 +321,7 @@ C
      &        f11.4, ',',f11.4, ',',f11.4, ',',f11.4)   
          
 
-      if (opt_spin == 1)then  
+      if (opt_spin == 1 .or. opt_spin == 2)then  
         do ! Run to equililibrium: cycles through the first 12 months or 365 days
           k = k + 1
           j = j + 1 
@@ -341,20 +359,55 @@ C
             TOC0 = TOC1
             TOC1 = DPM+RPM+Bio+Hum
             test = abs(TOC1-TOC0)            
-          endif    
-         
+          endif 
+                  
         enddo
       
-      else  ! if opt_spin is 2 or 3, set the dpm, rpm, bio, hum 
-       dpm= dpm_init
-       rpm= rpm_init
-       bio= bio_init
-       hum= hum_init
-       soc= dpm + rpm + bio + hum + iom
-       j = 1
+      else  ! if opt_spin is 3 or 4, set the dpm, rpm, bio, hum 
+        dpm= dpm_init
+        rpm= rpm_init
+        bio= bio_init
+        hum= hum_init
+        soc= dpm + rpm + bio + hum + iom
+        j = 1  
+      endif     
+C      
+C run RothC to equilibrium: END
+C
+!
+! NOTE_SPIN post eq start
+!
+      if(opt_spin == 2)then         
+        modTOC = DPM+RPM+Bio+Hum+IOM
           
-      endif
-       
+        write(81,8101)DPM, RPM, Bio, Hum, IOM, modTOC
+        write(81,8102)measTOC    
+        write(81,8103)(t_Pl_inp(ii), ii=1,12) 
+        write(81,*)
+8101  format(1x, 6f10.2)
+8102  format(51x, f10.2)
+8103  format(1x, 12f10.2)   
+      
+        PI_con_fact = (measTOC - IOM) / (modTOC - IOM)
+      
+        DPM = DPM * PI_con_fact
+        RPM = RPM * PI_con_fact
+        Bio = Bio * PI_con_fact
+        Hum = Hum * PI_con_fact
+      
+        do i = 1, year_end
+          t_Pl_inp(i) = t_Pl_inp(i) * PI_con_fact  
+        enddo
+      
+        SOC = DPM+RPM+Bio+Hum+IOM
+      
+        write(81,8101)DPM, RPM, Bio, Hum, IOM, SOC
+        write(81,8102)measTOC    
+        write(81,8103)(t_Pl_inp(ii), ii=1,12) 
+        
+      endif 
+      
+! NOTE_SPIN post eq end      
       
       total_CO2 = 0.0 ! reset CO2 to zero after the equilibrium run
       
@@ -372,7 +425,7 @@ C
          
       Total_Delta = (exp(-Total_Rage/8035.0) - 1.0) * 1000.0   
       
-      if(opt_spin==1)then
+      if(opt_spin==1 .or. opt_spin==2)then
         write(71,102) year, j-1, DPM, RPM, Bio, Hum, iom, SOC,  
      &             total_CO2, Total_Delta
       else
@@ -390,7 +443,7 @@ C
                                                              
       k_tstep = 0
       
-      if(opt_spin==3)then
+      if(opt_spin==4)then
           start_loop = 1
       else
           start_loop= year_end+1
@@ -443,7 +496,7 @@ C
 
 
       if(mod(i, year_end)== 0)then     ! print out results once a year
-        if(opt_spin==1)then
+        if(opt_spin==1 .or. opt_spin==2)then
           write(71,103) year, DPM, RPM, Bio, Hum, IOM, SOC, total_CO2, 
      &                Total_Delta
         else
